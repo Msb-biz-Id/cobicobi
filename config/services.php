@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'turnstile' => [
+        'enabled' => env('CLOUDFLARE_TURNSTILE_ENABLED', false),
+        'site_key' => env('CLOUDFLARE_TURNSTILE_SITE_KEY', '1x00000000000000000000AA'),
+        'secret_key' => env('CLOUDFLARE_TURNSTILE_SECRET_KEY', '1x0000000000000000000000000000000AA'),
+    ],
+
 ];

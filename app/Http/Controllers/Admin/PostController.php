@@ -167,7 +167,51 @@ class PostController extends Controller
         ]);
     }
 
-    public function store(StorePostRequest $request): RedirectResponse
+    public function create(): Response
+    {
+        return Inertia::render('Posts/Edit', [
+            'post' => null,
+            'categories' => Category::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'hashtags' => Hashtag::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']),
+        ]);
+    }
+
+    public function edit(Post $post): Response
+    {
+        $post->load([
+            'category:id,name',
+            'hashtags:id,name,slug',
+            'revisions' => fn ($q) => $q->latest('version')->limit(15),
+        ]);
+
+        return Inertia::render('Posts/Edit', [
+            'post' => [
+                'id' => $post->id,
+                'title' => $post->title,
+                'slug' => $post->slug,
+                'excerpt' => $post->excerpt,
+                'content' => $post->content,
+                'thumbnail_url' => $post->thumbnail_url,
+                'category_id' => $post->category_id,
+                'hashtag_ids' => $post->hashtags->pluck('id')->all(),
+                'meta_description' => $post->meta_description,
+                'meta_keywords' => $post->meta_keywords,
+                'status' => $post->status,
+                'views_count' => $post->views_count,
+                'created_at' => $post->created_at?->format('Y-m-d H:i'),
+                'revisions' => $post->revisions->map(fn ($r): array => [
+                    'id' => $r->id,
+                    'version' => $r->version,
+                    'note' => $r->note,
+                    'created_at' => $r->created_at?->format('Y-m-d H:i'),
+                ])->values()->all(),
+            ],
+            'categories' => Category::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'hashtags' => Hashtag::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']),
+        ]);
+    }
+
+    public function store(StorePostRequest $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validated();
         $validated['user_id'] = $request->user()->id;
@@ -175,6 +219,10 @@ class PostController extends Controller
 
         if ($request->hasFile('thumbnail')) {
             $validated['thumbnail_path'] = $request->file('thumbnail')->store('post-thumbnails', 'public');
+        } elseif ($request->filled('thumbnail_url')) {
+            $validated['thumbnail_path'] = ltrim(str_replace('/storage/', '', (string) parse_url((string) $request->input('thumbnail_url'), PHP_URL_PATH)), '/');
+        } elseif (is_string($request->input('thumbnail')) && filled($request->input('thumbnail'))) {
+            $validated['thumbnail_path'] = ltrim(str_replace('/storage/', '', (string) parse_url((string) $request->input('thumbnail'), PHP_URL_PATH)), '/');
         }
 
         $validated['status'] = ContentWorkflow::STATUS_DRAFT;
@@ -185,14 +233,22 @@ class PostController extends Controller
         $validated['approved_by'] = null;
         $validated['published_at'] = null;
 
-        unset($validated['thumbnail'], $validated['hashtag_ids']);
+        unset($validated['thumbnail'], $validated['thumbnail_url'], $validated['hashtag_ids']);
+
+        if (isset($validated['content'])) {
+            $validated['content'] = \App\Services\HtmlSanitizer::clean($validated['content']);
+        }
 
         $post = Post::create($validated);
         $post->hashtags()->sync($hashtagIds);
         $post->refresh();
         $this->createRevision($post, $request->user()->id, 'Versi awal');
 
-        return back()->with('success', 'Postingan berhasil ditambahkan.');
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'id' => $post->id, 'redirect' => route('posts.edit', $post->id)]);
+        }
+
+        return redirect()->route('posts.edit', $post->id)->with('success', 'Postingan berhasil disimpan.');
     }
 
     public function update(UpdatePostRequest $request, Post $post): RedirectResponse
@@ -203,6 +259,10 @@ class PostController extends Controller
         if ($request->hasFile('thumbnail')) {
             // Keep previous file so older revisions can still reference it.
             $validated['thumbnail_path'] = $request->file('thumbnail')->store('post-thumbnails', 'public');
+        } elseif ($request->filled('thumbnail_url')) {
+            $validated['thumbnail_path'] = ltrim(str_replace('/storage/', '', (string) parse_url((string) $request->input('thumbnail_url'), PHP_URL_PATH)), '/');
+        } elseif (is_string($request->input('thumbnail')) && filled($request->input('thumbnail'))) {
+            $validated['thumbnail_path'] = ltrim(str_replace('/storage/', '', (string) parse_url((string) $request->input('thumbnail'), PHP_URL_PATH)), '/');
         }
 
         if ($post->user_id === null) {
@@ -210,6 +270,10 @@ class PostController extends Controller
         }
 
         unset($validated['thumbnail'], $validated['hashtag_ids']);
+
+        if (isset($validated['content'])) {
+            $validated['content'] = \App\Services\HtmlSanitizer::clean($validated['content']);
+        }
 
         $post->update($validated);
         $post->hashtags()->sync($hashtagIds);
@@ -386,7 +450,7 @@ class PostController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         $request->validate([
-            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:5120'],
+            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:500'],
         ]);
 
         $path = $request->file('image')->store('post-content', 'public');

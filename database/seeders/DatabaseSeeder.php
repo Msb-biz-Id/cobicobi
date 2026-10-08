@@ -51,8 +51,13 @@ class DatabaseSeeder extends Seeder
 
         $this->call(PageSeeder::class);
         $this->call(PostSeeder::class);
-        $this->call(GallerySeeder::class);
+        $this->call(MediaSeeder::class);
         $this->call(NotificationSeeder::class);
         $this->call(ContactMessageSeeder::class);
+        $this->call(EventSeeder::class);
+        $this->call(AnnouncementSeeder::class);
+        $this->call(StaffProfileSeeder::class);
+        $this->call(AcademicStructureSeeder::class);
+        $this->call(FacilityAndExtracurricularSeeder::class);
     }
 }

@@ -29,9 +29,19 @@ class PasswordResetLinkController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $rules = [
             'email' => 'required|email',
-        ]);
+        ];
+
+        if (app(\App\Services\TurnstileService::class)->isEnabled()) {
+            $token = $request->input('cf_turnstile_response')
+                ?? $request->input('cf-turnstile-response')
+                ?? $request->input('turnstile_token');
+            $request->merge(['cf_turnstile_response' => $token]);
+            $rules['cf_turnstile_response'] = ['required', new \App\Rules\TurnstileRule()];
+        }
+
+        $request->validate($rules);
 
         // We will send the password reset link to this user. Once we have attempted
         // to send the link, we will examine the response then see the message we

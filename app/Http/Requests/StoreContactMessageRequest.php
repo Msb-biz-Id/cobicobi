@@ -22,7 +22,7 @@ class StoreContactMessageRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => ['required', 'string', 'min:2', 'max:120'],
             'email' => ['required', 'email:rfc,dns', 'max:180'],
             'phone_number' => [
@@ -35,6 +35,12 @@ class StoreContactMessageRequest extends FormRequest
             'website' => ['nullable', 'string', 'max:1'],
             'source_url' => ['nullable', 'url', 'max:255'],
         ];
+
+        if (app(\App\Services\TurnstileService::class)->isEnabled()) {
+            $rules['cf_turnstile_response'] = ['required', new \App\Rules\TurnstileRule()];
+        }
+
+        return $rules;
     }
 
     protected function prepareForValidation(): void
@@ -47,6 +53,10 @@ class StoreContactMessageRequest extends FormRequest
             return trim((string) $clean);
         };
 
+        $token = $this->input('cf_turnstile_response')
+            ?? $this->input('cf-turnstile-response')
+            ?? $this->input('turnstile_token');
+
         $this->merge([
             'name' => $strip($this->input('name')),
             'email' => strtolower($strip($this->input('email'))),
@@ -54,6 +64,7 @@ class StoreContactMessageRequest extends FormRequest
             'message' => $strip($this->input('message')),
             'website' => $strip($this->input('website')),
             'source_url' => $strip($this->input('source_url')),
+            'cf_turnstile_response' => $token,
         ]);
     }
 

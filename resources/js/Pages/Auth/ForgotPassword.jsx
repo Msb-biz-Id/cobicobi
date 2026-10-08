@@ -2,11 +2,13 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
+import Turnstile from '@/Components/Turnstile';
 import { Head, useForm } from '@inertiajs/react';
 
 export default function ForgotPassword({ status }) {
     const { data, setData, post, processing, errors } = useForm({
         email: '',
+        cf_turnstile_response: '',
     });
 
     const submit = (e) => {
@@ -43,6 +45,12 @@ export default function ForgotPassword({ status }) {
                 />
 
                 <InputError message={errors.email} className="mt-2" />
+
+                <Turnstile
+                    onSuccess={(token) => setData('cf_turnstile_response', token)}
+                    onExpire={() => setData('cf_turnstile_response', '')}
+                />
+                <InputError message={errors.cf_turnstile_response} className="mt-1 text-center" />
 
                 <div className="mt-4 flex items-center justify-end">
                     <PrimaryButton className="ms-4" disabled={processing}>

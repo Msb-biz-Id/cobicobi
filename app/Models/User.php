@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
@@ -82,13 +83,8 @@ class User extends Authenticatable
         return $this->hasMany(Post::class, 'user_id');
     }
 
-    public function galleries(): HasMany
+    public function staffProfile(): HasOne
     {
-        return $this->hasMany(Gallery::class, 'user_id');
-    }
-
-    public function galleryImages(): HasMany
-    {
-        return $this->hasMany(GalleryImage::class, 'user_id');
+        return $this->hasOne(StaffProfile::class, 'user_id');
     }
 }

@@ -1,7 +1,27 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { KeyRound, Pencil, Plus, Search, ShieldCheck, ShieldPlus, Trash2, UserCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/UI/PageHeader';
+import StatCard from '@/Components/UI/StatCard';
+import Button from '@/Components/UI/Button';
+import Input from '@/Components/UI/Input';
+import Textarea from '@/Components/UI/Textarea';
+import Select from '@/Components/UI/Select';
+import Badge from '@/Components/UI/Badge';
+import Modal from '@/Components/UI/Modal';
+import Pagination from '@/Components/UI/Pagination';
+import {
+    ShieldCheck,
+    KeyRound,
+    ShieldPlus,
+    UserCheck,
+    Plus,
+    Search,
+    Edit3,
+    Trash2,
+    Check,
+    Lock,
+} from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const baseRoleData = {
@@ -21,18 +41,20 @@ const basePermissionData = {
 export default function RolePermissionsIndex({
     roles,
     permissions,
-    permissionGroups,
+    permissionGroups = [],
     selectedRole,
-    roleOptions,
-    permissionGroupOptions,
-    filters,
-    stats,
+    roleOptions = [],
+    permissionGroupOptions = [],
+    filters = {},
+    stats = {},
 }) {
     const [roleSearch, setRoleSearch] = useState(filters.role_search ?? '');
     const [permissionSearch, setPermissionSearch] = useState(filters.permission_search ?? '');
     const [permissionGroup, setPermissionGroup] = useState(filters.permission_group ?? '');
     const [selectedRoleId, setSelectedRoleId] = useState(filters.selected_role_id ?? '');
 
+    const [roleModalOpen, setRoleModalOpen] = useState(false);
+    const [permissionModalOpen, setPermissionModalOpen] = useState(false);
     const [editingRole, setEditingRole] = useState(null);
     const [editingPermission, setEditingPermission] = useState(null);
     const [selectedPermissionIds, setSelectedPermissionIds] = useState([]);
@@ -46,13 +68,6 @@ export default function RolePermissionsIndex({
         setSelectedPermissionIds(selectedRole?.permission_ids ?? []);
     }, [selectedRole?.id]);
 
-    const statCards = [
-        { label: 'Total Roles', value: stats.roles, icon: ShieldCheck, color: 'text-primary' },
-        { label: 'Total Permissions', value: stats.permissions, icon: KeyRound, color: 'text-emerald-500' },
-        { label: 'Mapping Role-Permission', value: stats.mapped, icon: ShieldPlus, color: 'text-amber-500' },
-        { label: 'User Dengan Role Valid', value: stats.users_with_known_role, icon: UserCheck, color: 'text-sky-500' },
-    ];
-
     const queryParams = useMemo(
         () => ({
             role_search: roleSearch,
@@ -63,8 +78,8 @@ export default function RolePermissionsIndex({
         [permissionGroup, permissionSearch, roleSearch, selectedRoleId],
     );
 
-    const applyRoleSearch = (event) => {
-        event.preventDefault();
+    const applyRoleSearch = (e) => {
+        if (e) e.preventDefault();
         router.get(route('roles-permissions.index'), queryParams, {
             preserveState: true,
             preserveScroll: true,
@@ -72,13 +87,20 @@ export default function RolePermissionsIndex({
         });
     };
 
-    const applyPermissionFilters = (event) => {
-        event.preventDefault();
+    const applyPermissionFilters = (e) => {
+        if (e) e.preventDefault();
         router.get(route('roles-permissions.index'), queryParams, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
         });
+    };
+
+    const openCreateRole = () => {
+        setEditingRole(null);
+        roleForm.reset();
+        roleForm.clearErrors();
+        setRoleModalOpen(true);
     };
 
     const openEditRole = (role) => {
@@ -90,77 +112,113 @@ export default function RolePermissionsIndex({
             is_active: role.is_active,
         });
         roleForm.clearErrors();
+        setRoleModalOpen(true);
     };
 
-    const openEditPermission = (permission) => {
-        setEditingPermission(permission);
-        permissionForm.setData({
-            name: permission.name,
-            slug: permission.slug,
-            group_name: permission.group_name,
-            description: permission.description ?? '',
-        });
-        permissionForm.clearErrors();
-    };
-
-    const resetRoleForm = () => {
-        setEditingRole(null);
-        roleForm.reset();
-        roleForm.setData('is_active', true);
-        roleForm.clearErrors();
-    };
-
-    const resetPermissionForm = () => {
+    const openCreatePermission = () => {
         setEditingPermission(null);
         permissionForm.reset();
-        permissionForm.setData('group_name', 'general');
         permissionForm.clearErrors();
+        setPermissionModalOpen(true);
     };
-    const submitRole = (event) => {
-        event.preventDefault();
 
+    const openEditPermission = (perm) => {
+        setEditingPermission(perm);
+        permissionForm.setData({
+            name: perm.name,
+            slug: perm.slug,
+            group_name: perm.group_name,
+            description: perm.description ?? '',
+        });
+        permissionForm.clearErrors();
+        setPermissionModalOpen(true);
+    };
+
+    const submitRole = (e) => {
+        e.preventDefault();
         if (editingRole) {
-            roleForm.transform((data) => ({ ...data, _method: 'put' })).post(route('roles.update', editingRole.id), {
+            roleForm.put(route('roles.update', editingRole.id), {
                 preserveScroll: true,
-                onSuccess: () => resetRoleForm(),
+                onSuccess: () => {
+                    setRoleModalOpen(false);
+                    roleForm.reset();
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Role berhasil diperbarui',
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
+                },
             });
             return;
         }
 
         roleForm.post(route('roles.store'), {
             preserveScroll: true,
-            onSuccess: () => resetRoleForm(),
+            onSuccess: () => {
+                setRoleModalOpen(false);
+                roleForm.reset();
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Role baru berhasil dibuat',
+                    showConfirmButton: false,
+                    timer: 2000,
+                });
+            },
         });
     };
 
-    const submitPermission = (event) => {
-        event.preventDefault();
-
+    const submitPermission = (e) => {
+        e.preventDefault();
         if (editingPermission) {
-            permissionForm
-                .transform((data) => ({ ...data, _method: 'put' }))
-                .post(route('permissions.update', editingPermission.id), {
-                    preserveScroll: true,
-                    onSuccess: () => resetPermissionForm(),
-                });
+            permissionForm.put(route('permissions.update', editingPermission.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setPermissionModalOpen(false);
+                    permissionForm.reset();
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Permission berhasil diperbarui',
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
+                },
+            });
             return;
         }
 
         permissionForm.post(route('permissions.store'), {
             preserveScroll: true,
-            onSuccess: () => resetPermissionForm(),
+            onSuccess: () => {
+                setPermissionModalOpen(false);
+                permissionForm.reset();
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Permission baru berhasil dibuat',
+                    showConfirmButton: false,
+                    timer: 2000,
+                });
+            },
         });
     };
 
     const deleteRole = async (role) => {
         const result = await Swal.fire({
-            title: 'Hapus role?',
-            text: `Role ${role.name} akan dihapus permanen.`,
+            title: 'Hapus Role?',
+            text: `Role "${role.name}" akan dihapus permanen.`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Ya, hapus',
+            confirmButtonText: 'Ya, Hapus',
             cancelButtonText: 'Batal',
-            confirmButtonColor: '#ef4444',
+            confirmButtonColor: '#e11d48',
         });
 
         if (result.isConfirmed) {
@@ -168,229 +226,481 @@ export default function RolePermissionsIndex({
         }
     };
 
-    const deletePermission = async (permission) => {
+    const deletePermission = async (perm) => {
         const result = await Swal.fire({
-            title: 'Hapus permission?',
-            text: `Permission ${permission.name} akan dihapus permanen.`,
+            title: 'Hapus Permission?',
+            text: `Permission "${perm.name}" akan dihapus permanen.`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Ya, hapus',
+            confirmButtonText: 'Ya, Hapus',
             cancelButtonText: 'Batal',
-            confirmButtonColor: '#ef4444',
+            confirmButtonColor: '#e11d48',
         });
 
         if (result.isConfirmed) {
-            router.delete(route('permissions.destroy', permission.id), { preserveScroll: true });
+            router.delete(route('permissions.destroy', perm.id), { preserveScroll: true });
         }
     };
 
-    const changeSelectedRole = (value) => {
-        setSelectedRoleId(value);
-        router.get(route('roles-permissions.index'), { ...queryParams, selected_role_id: value || undefined }, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
-    };
-
-    const togglePermission = (permissionId) => {
-        setSelectedPermissionIds((current) =>
-            current.includes(permissionId)
-                ? current.filter((item) => item !== permissionId)
-                : [...current, permissionId],
+    const changeSelectedRole = (val) => {
+        setSelectedRoleId(val);
+        router.get(
+            route('roles-permissions.index'),
+            { ...queryParams, selected_role_id: val || undefined },
+            { preserveState: true, preserveScroll: true, replace: true },
         );
     };
 
-    const submitMapping = (event) => {
-        event.preventDefault();
+    const togglePermission = (permId) => {
+        setSelectedPermissionIds((curr) =>
+            curr.includes(permId)
+                ? curr.filter((id) => id !== permId)
+                : [...curr, permId],
+        );
+    };
+
+    const submitMapping = (e) => {
+        e.preventDefault();
         if (!selectedRole?.id) return;
 
-        syncPermissionForm.transform(() => ({ _method: 'put', permission_ids: selectedPermissionIds }))
-            .post(route('roles.permissions.sync', selectedRole.id), { preserveScroll: true });
+        syncPermissionForm
+            .transform(() => ({ _method: 'put', permission_ids: selectedPermissionIds }))
+            .post(route('roles.permissions.sync', selectedRole.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Matrix hak akses role berhasil disimpan',
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
+                },
+            });
     };
 
     return (
         <AuthenticatedLayout>
-            <Head title="Role & Permission" />
+            <Head title="Roles & Permissions" />
 
-            <section className="space-y-6">
-                <header>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Role & Permission</h1>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        CRUD role, CRUD permission, dan mapping permission per role.
-                    </p>
-                </header>
-
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {statCards.map((card) => {
-                        const Icon = card.icon;
-                        return (
-                            <article key={card.label} className="surface-card p-5">
-                                <div className="mb-4 flex items-center justify-between">
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
-                                    <Icon className={`h-5 w-5 ${card.color}`} />
-                                </div>
-                                <p className="text-3xl font-bold text-slate-900 dark:text-white">{card.value.toLocaleString()}</p>
-                            </article>
-                        );
-                    })}
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                    <section className="surface-card p-5">
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{editingRole ? 'Edit Role' : 'Tambah Role'}</h2>
-                        <form onSubmit={submitRole} className="mt-4 space-y-3">
-                            <input type="text" placeholder="Nama role" value={roleForm.data.name} onChange={(e) => roleForm.setData('name', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <input type="text" placeholder="Slug (opsional)" value={roleForm.data.slug} onChange={(e) => roleForm.setData('slug', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <textarea rows={3} placeholder="Deskripsi" value={roleForm.data.description} onChange={(e) => roleForm.setData('description', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <select value={roleForm.data.is_active ? '1' : '0'} onChange={(e) => roleForm.setData('is_active', e.target.value === '1')} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30">
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
-                            </select>
-                            <div className="flex justify-end gap-2">
-                                {editingRole && <button type="button" onClick={resetRoleForm} className="rounded-[0.625rem] border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800">Batal Edit</button>}
-                                <button type="submit" className="inline-flex items-center gap-2 rounded-[0.625rem] bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"><Plus className="h-4 w-4" />{editingRole ? 'Perbarui Role' : 'Simpan Role'}</button>
-                            </div>
-                        </form>
-                    </section>
-
-                    <section className="surface-card p-5">
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{editingPermission ? 'Edit Permission' : 'Tambah Permission'}</h2>
-                        <form onSubmit={submitPermission} className="mt-4 space-y-3">
-                            <input type="text" placeholder="Nama permission" value={permissionForm.data.name} onChange={(e) => permissionForm.setData('name', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <input type="text" placeholder="Slug (opsional)" value={permissionForm.data.slug} onChange={(e) => permissionForm.setData('slug', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <input type="text" placeholder="Group (contoh: users)" value={permissionForm.data.group_name} onChange={(e) => permissionForm.setData('group_name', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <textarea rows={3} placeholder="Deskripsi" value={permissionForm.data.description} onChange={(e) => permissionForm.setData('description', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <div className="flex justify-end gap-2">
-                                {editingPermission && <button type="button" onClick={resetPermissionForm} className="rounded-[0.625rem] border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800">Batal Edit</button>}
-                                <button type="submit" className="inline-flex items-center gap-2 rounded-[0.625rem] bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"><Plus className="h-4 w-4" />{editingPermission ? 'Perbarui Permission' : 'Simpan Permission'}</button>
-                            </div>
-                        </form>
-                    </section>
-                </div>
-                <section className="surface-card p-5">
-                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Mapping Permission Ke Role</h2>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Pilih role lalu centang permission yang diizinkan.</p>
+            <div className="space-y-6">
+                <PageHeader
+                    title="Roles & Authorization"
+                    subtitle="Configure security roles, granular permission capabilities, and access control matrix"
+                    actions={
+                        <div className="flex items-center gap-2">
+                            <Button size="sm" variant="secondary" icon={KeyRound} onClick={openCreatePermission}>
+                                New Permission
+                            </Button>
+                            <Button size="sm" variant="primary" icon={Plus} onClick={openCreateRole}>
+                                New Role
+                            </Button>
                         </div>
+                    }
+                />
+
+                {/* Stat Cards */}
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <StatCard
+                        icon={ShieldCheck}
+                        label="System Roles"
+                        value={stats.roles?.toLocaleString() ?? 0}
+                    />
+                    <StatCard
+                        icon={KeyRound}
+                        label="Permissions"
+                        value={stats.permissions?.toLocaleString() ?? 0}
+                    />
+                    <StatCard
+                        icon={ShieldPlus}
+                        label="Mapped Privileges"
+                        value={stats.mapped?.toLocaleString() ?? 0}
+                    />
+                    <StatCard
+                        icon={UserCheck}
+                        label="Users with Role"
+                        value={stats.users_with_known_role?.toLocaleString() ?? 0}
+                    />
+                </div>
+
+                {/* Role-Permission Matrix Section */}
+                <div className="surface-card p-6 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4 dark:border-slate-800">
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                Role Permission Matrix
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Select a role to toggle which operational capabilities are granted.
+                            </p>
+                        </div>
+
                         <div className="w-full sm:w-72">
-                            <select value={selectedRoleId || ''} onChange={(e) => changeSelectedRole(e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30">
-                                <option value="">Pilih role</option>
-                                {roleOptions.map((role) => (
-                                    <option key={role.id} value={role.id}>{role.name} ({role.slug})</option>
+                            <select
+                                value={selectedRoleId || ''}
+                                onChange={(e) => changeSelectedRole(e.target.value)}
+                                className="w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-xs font-semibold text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                            >
+                                <option value="">Select a Role to Manage...</option>
+                                {roleOptions.map((r) => (
+                                    <option key={r.id} value={r.id}>
+                                        {r.name} ({r.slug})
+                                    </option>
                                 ))}
                             </select>
                         </div>
                     </div>
 
-                    {!selectedRole && <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada role dipilih.</p>}
-                    {selectedRole && (
-                        <form onSubmit={submitMapping} className="space-y-4">
-                            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                                {permissionGroups.map((groupItem) => (
-                                    <div key={groupItem.group} className="rounded-[0.625rem] border border-slate-200 p-4 dark:border-border-dark">
-                                        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">{groupItem.group}</p>
-                                        <div className="space-y-1">
-                                            {groupItem.permissions.map((permission) => (
-                                                <label key={permission.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                                                    <input type="checkbox" checked={selectedPermissionIds.includes(permission.id)} onChange={() => togglePermission(permission.id)} className="rounded border-slate-300 text-primary shadow-sm focus:ring-primary/30" />
-                                                    <span>{permission.name}</span>
-                                                </label>
-                                            ))}
+                    {!selectedRole ? (
+                        <div className="py-8 text-center text-xs text-slate-400">
+                            Please select a role from the dropdown above to inspect and edit permissions.
+                        </div>
+                    ) : (
+                        <form onSubmit={submitMapping} className="space-y-6">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {permissionGroups.map((group) => (
+                                    <div
+                                        key={group.group}
+                                        className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/40"
+                                    >
+                                        <div className="flex items-center justify-between border-b border-slate-200/60 pb-2 mb-3 dark:border-slate-800">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                                {group.group}
+                                            </span>
+                                            <span className="text-[10px] font-mono text-slate-400">
+                                                {group.permissions.length} perms
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {group.permissions.map((p) => {
+                                                const checked = selectedPermissionIds.includes(p.id);
+                                                return (
+                                                    <label
+                                                        key={p.id}
+                                                        className={`flex items-center gap-2.5 rounded-xl p-2 cursor-pointer transition text-xs ${
+                                                            checked
+                                                                ? 'bg-indigo-50/80 text-indigo-900 font-medium dark:bg-indigo-950/30 dark:text-indigo-200'
+                                                                : 'hover:bg-slate-100 text-slate-600 dark:text-slate-400 dark:hover:bg-slate-800'
+                                                        }`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={checked}
+                                                            onChange={() => togglePermission(p.id)}
+                                                            className="rounded text-indigo-600 focus:ring-indigo-500 dark:bg-slate-900"
+                                                        />
+                                                        <div className="min-w-0">
+                                                            <span className="block truncate">{p.name}</span>
+                                                            <span className="block font-mono text-[10px] text-slate-400 truncate">
+                                                                {p.slug}
+                                                            </span>
+                                                        </div>
+                                                    </label>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="flex justify-end">
-                                <button type="submit" className="rounded-[0.625rem] bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Simpan Mapping Permission</button>
+
+                            <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    size="sm"
+                                    icon={Check}
+                                    loading={syncPermissionForm.processing}
+                                >
+                                    Save Privileges for {selectedRole.name}
+                                </Button>
                             </div>
                         </form>
                     )}
-                </section>
+                </div>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                    <section className="surface-card overflow-hidden">
-                        <form onSubmit={applyRoleSearch} className="border-b border-slate-200 p-4 dark:border-border-dark">
-                            <div className="relative">
-                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <input type="text" value={roleSearch} onChange={(e) => setRoleSearch(e.target.value)} placeholder="Cari role..." className="w-full rounded-[0.625rem] border-slate-300 bg-white pl-9 text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            </div>
-                        </form>
+                {/* Two Column Grid for Roles and Permissions List */}
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    {/* Roles Table */}
+                    <div className="surface-card overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/40">
+                            <form onSubmit={applyRoleSearch} className="relative flex-1">
+                                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    value={roleSearch}
+                                    onChange={(e) => setRoleSearch(e.target.value)}
+                                    placeholder="Search roles..."
+                                    className="w-full rounded-xl border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                                />
+                            </form>
+                        </div>
+
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200 dark:divide-border-dark">
-                                <thead className="bg-slate-50 dark:bg-slate-900/20">
+                            <table className="w-full text-left text-xs">
+                                <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Role</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Stats</th>
-                                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Aksi</th>
+                                        <th className="py-3.5 pl-5 pr-3">Role Name</th>
+                                        <th className="py-3.5 px-3">Users</th>
+                                        <th className="py-3.5 px-3">Permissions</th>
+                                        <th className="py-3.5 pl-3 pr-5 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
-                                    {roles.data.map((role) => (
-                                        <tr key={role.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
-                                            <td className="px-4 py-3"><p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{role.name}</p><p className="text-xs text-slate-500 dark:text-slate-400">{role.slug}</p></td>
-                                            <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400"><p>{role.users_count} user</p><p>{role.permissions_count} permission</p></td>
-                                            <td className="px-4 py-3"><div className="flex justify-end gap-1"><button type="button" onClick={() => openEditRole(role)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800"><Pencil className="h-4 w-4" /></button><button type="button" onClick={() => deleteRole(role)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10"><Trash2 className="h-4 w-4" /></button></div></td>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                                    {roles.data.map((r) => (
+                                        <tr
+                                            key={r.id}
+                                            className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors"
+                                        >
+                                            <td className="py-3.5 pl-5 pr-3">
+                                                <p className="font-bold text-slate-900 dark:text-white">
+                                                    {r.name}
+                                                </p>
+                                                <p className="font-mono text-[11px] text-slate-400">
+                                                    {r.slug}
+                                                </p>
+                                            </td>
+                                            <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-slate-300">
+                                                {r.users_count}
+                                            </td>
+                                            <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-slate-300">
+                                                {r.permissions_count}
+                                            </td>
+                                            <td className="py-3.5 pl-3 pr-5 text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEditRole(r)}
+                                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
+                                                        title="Edit role"
+                                                    >
+                                                        <Edit3 className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deleteRole(r)}
+                                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition"
+                                                        title="Delete role"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                        <div className="flex flex-wrap justify-end gap-1 border-t border-slate-200 px-4 py-3 dark:border-border-dark">
-                            {roles.links.map((link) => (
-                                <Link
-                                    key={link.label}
-                                    href={link.url || '#'}
-                                    preserveScroll
-                                    preserveState
-                                    className={`rounded-md border px-3 py-1.5 text-sm transition-colors duration-200 ${link.active ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800'} ${!link.url ? 'pointer-events-none opacity-40' : ''}`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ))}
-                        </div>
-                    </section>
 
-                    <section className="surface-card overflow-hidden">
-                        <form onSubmit={applyPermissionFilters} className="grid grid-cols-1 gap-2 border-b border-slate-200 p-4 dark:border-border-dark sm:grid-cols-3">
-                            <div className="relative sm:col-span-2">
-                                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                <input type="text" value={permissionSearch} onChange={(e) => setPermissionSearch(e.target.value)} placeholder="Cari permission..." className="w-full rounded-[0.625rem] border-slate-300 bg-white pl-9 text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            </div>
-                            <select value={permissionGroup} onChange={(e) => setPermissionGroup(e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30">
-                                <option value="">Semua group</option>
-                                {permissionGroupOptions.map((groupName) => (<option key={groupName} value={groupName}>{groupName}</option>))}
+                        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
+                            <Pagination links={roles?.links} meta={roles} />
+                        </div>
+                    </div>
+
+                    {/* Permissions Table */}
+                    <div className="surface-card overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-2 bg-slate-50/50 dark:bg-slate-900/40">
+                            <form onSubmit={applyPermissionFilters} className="relative flex-1 w-full">
+                                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    value={permissionSearch}
+                                    onChange={(e) => setPermissionSearch(e.target.value)}
+                                    placeholder="Search permissions..."
+                                    className="w-full rounded-xl border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                                />
+                            </form>
+                            <select
+                                value={permissionGroup}
+                                onChange={(e) => {
+                                    setPermissionGroup(e.target.value);
+                                    router.get(
+                                        route('roles-permissions.index'),
+                                        { ...queryParams, permission_group: e.target.value },
+                                        { preserveState: true, preserveScroll: true, replace: true },
+                                    );
+                                }}
+                                className="w-full sm:w-40 rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                            >
+                                <option value="">All Groups</option>
+                                {permissionGroupOptions.map((grp) => (
+                                    <option key={grp} value={grp}>
+                                        {grp}
+                                    </option>
+                                ))}
                             </select>
-                        </form>
+                        </div>
+
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200 dark:divide-border-dark">
-                                <thead className="bg-slate-50 dark:bg-slate-900/20"><tr><th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Permission</th><th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Group</th><th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Aksi</th></tr></thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
-                                    {permissions.data.map((permission) => (
-                                        <tr key={permission.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
-                                            <td className="px-4 py-3"><p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{permission.name}</p><p className="text-xs text-slate-500 dark:text-slate-400">{permission.slug}</p></td>
-                                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{permission.group_name}</td>
-                                            <td className="px-4 py-3"><div className="flex justify-end gap-1"><button type="button" onClick={() => openEditPermission(permission)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800"><Pencil className="h-4 w-4" /></button><button type="button" onClick={() => deletePermission(permission)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10"><Trash2 className="h-4 w-4" /></button></div></td>
+                            <table className="w-full text-left text-xs">
+                                <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                                    <tr>
+                                        <th className="py-3.5 pl-5 pr-3">Permission</th>
+                                        <th className="py-3.5 px-3">Group</th>
+                                        <th className="py-3.5 pl-3 pr-5 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                                    {permissions.data.map((p) => (
+                                        <tr
+                                            key={p.id}
+                                            className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors"
+                                        >
+                                            <td className="py-3.5 pl-5 pr-3">
+                                                <p className="font-semibold text-slate-900 dark:text-white">
+                                                    {p.name}
+                                                </p>
+                                                <p className="font-mono text-[11px] text-slate-400">
+                                                    {p.slug}
+                                                </p>
+                                            </td>
+                                            <td className="py-3.5 px-3">
+                                                <Badge variant="neutral" size="sm">
+                                                    {p.group_name}
+                                                </Badge>
+                                            </td>
+                                            <td className="py-3.5 pl-3 pr-5 text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEditPermission(p)}
+                                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
+                                                        title="Edit permission"
+                                                    >
+                                                        <Edit3 className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => deletePermission(p)}
+                                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition"
+                                                        title="Delete permission"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                        <div className="flex flex-wrap justify-end gap-1 border-t border-slate-200 px-4 py-3 dark:border-border-dark">
-                            {permissions.links.map((link) => (
-                                <Link
-                                    key={link.label}
-                                    href={link.url || '#'}
-                                    preserveScroll
-                                    preserveState
-                                    className={`rounded-md border px-3 py-1.5 text-sm transition-colors duration-200 ${link.active ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800'} ${!link.url ? 'pointer-events-none opacity-40' : ''}`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ))}
+
+                        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
+                            <Pagination links={permissions?.links} meta={permissions} />
                         </div>
-                    </section>
+                    </div>
                 </div>
-            </section>
+            </div>
+
+            {/* Role Modal */}
+            <Modal
+                show={roleModalOpen}
+                onClose={() => setRoleModalOpen(false)}
+                title={editingRole ? 'Edit Role' : 'Create New Role'}
+                description="Define role identifier and permissions group"
+            >
+                <form onSubmit={submitRole} className="space-y-4">
+                    <Input
+                        label="Role Name"
+                        placeholder="e.g. Content Manager"
+                        value={roleForm.data.name}
+                        onChange={(e) => {
+                            roleForm.setData('name', e.target.value);
+                            if (!editingRole) {
+                                roleForm.setData('slug', e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
+                            }
+                        }}
+                        error={roleForm.errors.name}
+                        required
+                    />
+
+                    <Input
+                        label="Slug"
+                        placeholder="e.g. content-manager"
+                        value={roleForm.data.slug}
+                        onChange={(e) => roleForm.setData('slug', e.target.value)}
+                        error={roleForm.errors.slug}
+                        required
+                    />
+
+                    <Textarea
+                        label="Description"
+                        rows={3}
+                        value={roleForm.data.description}
+                        onChange={(e) => roleForm.setData('description', e.target.value)}
+                        error={roleForm.errors.description}
+                    />
+
+                    <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <Button variant="outline" size="sm" onClick={() => setRoleModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" size="sm" loading={roleForm.processing}>
+                            {editingRole ? 'Update Role' : 'Create Role'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Permission Modal */}
+            <Modal
+                show={permissionModalOpen}
+                onClose={() => setPermissionModalOpen(false)}
+                title={editingPermission ? 'Edit Permission' : 'Create New Permission'}
+                description="Define granular permission action and scope"
+            >
+                <form onSubmit={submitPermission} className="space-y-4">
+                    <Input
+                        label="Permission Name"
+                        placeholder="e.g. Publish Articles"
+                        value={permissionForm.data.name}
+                        onChange={(e) => {
+                            permissionForm.setData('name', e.target.value);
+                            if (!editingPermission) {
+                                permissionForm.setData('slug', e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/(^-|-$)+/g, ''));
+                            }
+                        }}
+                        error={permissionForm.errors.name}
+                        required
+                    />
+
+                    <Input
+                        label="Slug (e.g. posts.publish)"
+                        placeholder="e.g. posts.publish"
+                        value={permissionForm.data.slug}
+                        onChange={(e) => permissionForm.setData('slug', e.target.value)}
+                        error={permissionForm.errors.slug}
+                        required
+                    />
+
+                    <Input
+                        label="Group Name (e.g. posts, media, users)"
+                        placeholder="e.g. posts"
+                        value={permissionForm.data.group_name}
+                        onChange={(e) => permissionForm.setData('group_name', e.target.value)}
+                        error={permissionForm.errors.group_name}
+                        required
+                    />
+
+                    <Textarea
+                        label="Description"
+                        rows={2}
+                        value={permissionForm.data.description}
+                        onChange={(e) => permissionForm.setData('description', e.target.value)}
+                        error={permissionForm.errors.description}
+                    />
+
+                    <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <Button variant="outline" size="sm" onClick={() => setPermissionModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" size="sm" loading={permissionForm.processing}>
+                            {editingPermission ? 'Update Permission' : 'Create Permission'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </AuthenticatedLayout>
     );
 }

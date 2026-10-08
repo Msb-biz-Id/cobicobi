@@ -1,7 +1,16 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Eye, Hash, Pencil, Plus, Search, Tags, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
+import { Head, router, useForm } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/UI/PageHeader';
+import StatCard from '@/Components/UI/StatCard';
+import Button from '@/Components/UI/Button';
+import Input from '@/Components/UI/Input';
+import Textarea from '@/Components/UI/Textarea';
+import Badge from '@/Components/UI/Badge';
+import EmptyState from '@/Components/UI/EmptyState';
+import Pagination from '@/Components/UI/Pagination';
+import Modal from '@/Components/UI/Modal';
+import { Hash, Tags, Eye, Plus, Search, Edit3, Trash2, TrendingUp, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 const defaultData = {
@@ -12,35 +21,98 @@ const defaultData = {
     is_active: true,
 };
 
-export default function HashtagsIndex({ hashtags, filters, topHashtags, stats }) {
-    const [search, setSearch] = useState(filters.search ?? '');
+export default function HashtagsIndex({ hashtags, filters = {}, topHashtags = [], stats = {} }) {
+    const [search, setSearch] = useState(filters.search || '');
+    const [modalOpen, setModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
 
     const form = useForm(defaultData);
 
-    const submit = (event) => {
-        event.preventDefault();
+    const openCreate = () => {
+        setEditingItem(null);
+        form.setData(defaultData);
+        form.clearErrors();
+        setModalOpen(true);
+    };
 
+    const openEdit = (item) => {
+        setEditingItem(item);
+        form.setData({
+            name: item.name,
+            slug: item.slug,
+            description: item.description || '',
+            views_count: item.views_count ?? 0,
+            is_active: item.is_active ?? true,
+        });
+        form.clearErrors();
+        setModalOpen(true);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
         if (editingItem) {
-            form.transform((data) => ({ ...data, _method: 'put' })).post(route('hashtags.update', editingItem.id), {
+            form.put(route('hashtags.update', editingItem.id), {
                 preserveScroll: true,
                 onSuccess: () => {
+                    setModalOpen(false);
                     form.reset();
-                    setEditingItem(null);
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Hashtag berhasil diperbarui',
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
                 },
             });
-            return;
+        } else {
+            form.post(route('hashtags.store'), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Hashtag baru berhasil dibuat',
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
+                },
+            });
         }
+    };
 
-        form.post(route('hashtags.store'), {
-            preserveScroll: true,
-            onSuccess: () => form.reset(),
+    const handleDelete = (item) => {
+        Swal.fire({
+            title: 'Hapus Hashtag?',
+            text: `Hashtag #${item.slug} akan dihapus permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Hapus',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#e11d48',
+        }).then((res) => {
+            if (res.isConfirmed) {
+                router.delete(route('hashtags.destroy', item.id), {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        Swal.fire('Terhapus!', 'Hashtag telah dihapus.', 'success');
+                    },
+                });
+            }
         });
     };
 
-    const applySearch = (event) => {
-        event.preventDefault();
-        router.get(route('hashtags.index'), { search }, { preserveScroll: true, preserveState: true, replace: true });
+    const handleSearch = (e) => {
+        e.preventDefault();
+        router.get(
+            route('hashtags.index'),
+            { search },
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
     };
 
     const resetSearch = () => {
@@ -48,155 +120,252 @@ export default function HashtagsIndex({ hashtags, filters, topHashtags, stats })
         router.get(route('hashtags.index'), {}, { preserveScroll: true, preserveState: true, replace: true });
     };
 
-    const editItem = (item) => {
-        setEditingItem(item);
-        form.setData({
-            name: item.name,
-            slug: item.slug,
-            description: item.description ?? '',
-            views_count: item.views_count ?? 0,
-            is_active: item.is_active,
-        });
-        form.clearErrors();
-    };
-
-    const cancelEdit = () => {
-        setEditingItem(null);
-        form.reset();
-        form.clearErrors();
-    };
-
-    const deleteItem = async (item) => {
-        const result = await Swal.fire({
-            title: 'Hapus hastag?',
-            text: `Hastag #${item.slug} akan dihapus permanen.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Ya, hapus',
-            cancelButtonText: 'Batal',
-            confirmButtonColor: '#ef4444',
-        });
-
-        if (!result.isConfirmed) return;
-
-        router.delete(route('hashtags.destroy', item.id), { preserveScroll: true });
-    };
-
-    const statCards = [
-        { label: 'Total Hastag', value: stats.total, icon: Tags, color: 'text-primary' },
-        { label: 'Active', value: stats.active, icon: Hash, color: 'text-emerald-500' },
-        { label: 'Inactive', value: stats.inactive, icon: XCircle, color: 'text-rose-500' },
-        { label: 'Total Views', value: stats.views, icon: Eye, color: 'text-sky-500' },
-    ];
-
     return (
         <AuthenticatedLayout>
-            <Head title="Kelola Hastag" />
+            <Head title="Hashtags" />
 
-            <section className="space-y-6">
-                <header>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Kelola Hastag</h1>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">CRUD hastag + ranking hastag paling banyak di views.</p>
-                </header>
+            <PageHeader
+                title="Hashtags"
+                subtitle="Manage editorial tags and track engagement across trending topics"
+                actions={
+                    <Button size="sm" variant="primary" icon={Plus} onClick={openCreate}>
+                        New Hashtag
+                    </Button>
+                }
+            />
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {statCards.map((card) => {
-                        const Icon = card.icon;
-                        return (
-                            <article key={card.label} className="surface-card p-5">
-                                <div className="mb-4 flex items-center justify-between">
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
-                                    <Icon className={`h-5 w-5 ${card.color}`} />
-                                </div>
-                                <p className="text-3xl font-bold text-slate-900 dark:text-white">{card.value.toLocaleString()}</p>
-                            </article>
-                        );
-                    })}
-                </div>
+            {/* Stat Cards */}
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <StatCard
+                    icon={Tags}
+                    label="Total Hashtags"
+                    value={stats.total?.toLocaleString() ?? 0}
+                />
+                <StatCard
+                    icon={Hash}
+                    label="Active Topics"
+                    value={stats.active?.toLocaleString() ?? 0}
+                />
+                <StatCard
+                    icon={Eye}
+                    label="Total Impressions"
+                    value={stats.views?.toLocaleString() ?? 0}
+                />
+                <StatCard
+                    icon={TrendingUp}
+                    label="Inactive Topics"
+                    value={stats.inactive?.toLocaleString() ?? 0}
+                />
+            </div>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <section className="surface-card p-5 xl:col-span-1">
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{editingItem ? 'Edit Hastag' : 'Tambah Hastag'}</h2>
-                        <form onSubmit={submit} className="mt-4 space-y-3">
-                            <input type="text" placeholder="Nama hastag" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <input type="text" placeholder="Slug (opsional)" value={form.data.slug} onChange={(e) => form.setData('slug', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <textarea rows={3} placeholder="Deskripsi" value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <input type="number" min="0" placeholder="Views" value={form.data.views_count} onChange={(e) => form.setData('views_count', Number(e.target.value || 0))} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <select value={form.data.is_active ? '1' : '0'} onChange={(e) => form.setData('is_active', e.target.value === '1')} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30">
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
-                            </select>
-                            <div className="flex justify-end gap-2">
-                                {editingItem && <button type="button" onClick={cancelEdit} className="rounded-[0.625rem] border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800">Batal</button>}
-                                <button type="submit" className="inline-flex items-center gap-2 rounded-[0.625rem] bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"><Plus className="h-4 w-4" />{editingItem ? 'Perbarui' : 'Simpan'}</button>
-                            </div>
-                        </form>
-                    </section>
-
-                    <section className="surface-card overflow-hidden xl:col-span-2">
-                        <form onSubmit={applySearch} className="border-b border-slate-200 p-4 dark:border-border-dark">
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                    <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari hastag..." className="w-full rounded-[0.625rem] border-slate-300 bg-white pl-9 text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <button type="button" onClick={resetSearch} className="rounded-[0.625rem] border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800">Reset</button>
-                            </div>
-                        </form>
-
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200 dark:divide-border-dark">
-                                <thead className="bg-slate-50 dark:bg-slate-900/20">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Hastag</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Views</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
-                                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
-                                    {hashtags.data.map((item) => (
-                                        <tr key={item.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
-                                            <td className="px-4 py-3">
-                                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">#{item.slug}</p>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400">{item.name}</p>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{item.views_count.toLocaleString()}</td>
-                                            <td className="px-4 py-3"><span className={`rounded-md px-2 py-1 text-xs font-semibold ${item.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'}`}>{item.is_active ? 'Active' : 'Inactive'}</span></td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-end gap-1">
-                                                    <button type="button" onClick={() => editItem(item)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800"><Pencil className="h-4 w-4" /></button>
-                                                    <button type="button" onClick={() => deleteItem(item)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10"><Trash2 className="h-4 w-4" /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+            {/* Top Hashtags Pills */}
+            {topHashtags.length > 0 && (
+                <div className="surface-card p-5">
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <TrendingUp className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                Most Viewed Hashtags
+                            </h3>
                         </div>
-
-                        <div className="flex flex-wrap justify-end gap-1 border-t border-slate-200 px-4 py-3 dark:border-border-dark">
-                            {hashtags.links.map((link) => (
-                                <Link key={link.label} href={link.url || '#'} preserveScroll preserveState className={`rounded-md border px-3 py-1.5 text-sm ${link.active ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800'} ${!link.url ? 'pointer-events-none opacity-40' : ''}`} dangerouslySetInnerHTML={{ __html: link.label }} />
-                            ))}
-                        </div>
-                    </section>
-                </div>
-
-                <section className="surface-card p-5">
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Hastag Paling Banyak di Views</h2>
-                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-                        {topHashtags.map((item, idx) => (
-                            <article key={item.id} className="rounded-[0.625rem] border border-slate-200 p-3 dark:border-border-dark">
-                                <p className="text-xs font-semibold text-slate-500">#{idx + 1}</p>
-                                <p className="mt-1 truncate text-sm font-semibold text-slate-800 dark:text-slate-100">#{item.slug}</p>
-                                <p className="mt-2 text-xs text-slate-500">{item.views_count.toLocaleString()} views</p>
-                            </article>
-                        ))}
-                        {topHashtags.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada data hastag.</p>}
+                        <span className="text-[11px] text-slate-400">Ranked by editorial views</span>
                     </div>
-                </section>
-            </section>
+                    <div className="flex flex-wrap gap-2">
+                        {topHashtags.map((item, idx) => (
+                            <div
+                                key={item.id}
+                                className="group inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/50 px-3 py-1.5 text-xs text-slate-700 transition hover:border-indigo-300 hover:bg-indigo-50/40 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/20"
+                            >
+                                <span className="font-semibold text-indigo-600 dark:text-indigo-400">#{item.slug}</span>
+                                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                                    {(item.views_count || 0).toLocaleString()} views
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Main Table Card */}
+            <div className="surface-card overflow-hidden">
+                {/* Search Bar */}
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/40">
+                    <form onSubmit={handleSearch} className="relative w-full sm:max-w-xs flex gap-2">
+                        <div className="relative flex-1">
+                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search hashtags..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                            />
+                        </div>
+                        {search && (
+                            <button
+                                type="button"
+                                onClick={resetSearch}
+                                className="inline-flex items-center rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
+                            >
+                                Reset
+                            </button>
+                        )}
+                    </form>
+                </div>
+
+                {/* Table */}
+                {hashtags?.data?.length === 0 ? (
+                    <div className="p-8">
+                        <EmptyState
+                            icon={Hash}
+                            title="No hashtags found"
+                            description="Add hashtags to categorize content with high-velocity tags."
+                            actionLabel="Add Hashtag"
+                            onAction={openCreate}
+                            actionIcon={Plus}
+                        />
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                            <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                                <tr>
+                                    <th className="py-3.5 pl-5 pr-3">Hashtag</th>
+                                    <th className="py-3.5 px-3">Display Name</th>
+                                    <th className="py-3.5 px-3">Description</th>
+                                    <th className="py-3.5 px-3">Views</th>
+                                    <th className="py-3.5 px-3">Status</th>
+                                    <th className="py-3.5 pl-3 pr-5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                                {hashtags.data.map((item) => (
+                                    <tr
+                                        key={item.id}
+                                        className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors"
+                                    >
+                                        <td className="py-3.5 pl-5 pr-3 font-semibold text-indigo-600 dark:text-indigo-400 text-sm">
+                                            #{item.slug}
+                                        </td>
+                                        <td className="py-3.5 px-3 font-medium text-slate-900 dark:text-white">
+                                            {item.name}
+                                        </td>
+                                        <td className="py-3.5 px-3 text-slate-500 dark:text-slate-400 max-w-xs truncate">
+                                            {item.description || '-'}
+                                        </td>
+                                        <td className="py-3.5 px-3 font-mono text-slate-600 dark:text-slate-300">
+                                            {(item.views_count || 0).toLocaleString()}
+                                        </td>
+                                        <td className="py-3.5 px-3">
+                                            <Badge variant={item.is_active ? 'success' : 'neutral'} size="sm">
+                                                {item.is_active ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </td>
+                                        <td className="py-3.5 pl-3 pr-5 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEdit(item)}
+                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit3 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDelete(item)}
+                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
+                    <Pagination links={hashtags?.links} meta={hashtags} />
+                </div>
+            </div>
+
+            {/* Create / Edit Modal */}
+            <Modal
+                show={modalOpen}
+                onClose={() => setModalOpen(false)}
+                title={editingItem ? 'Edit Hashtag' : 'New Hashtag'}
+                description="Manage hashtag identifier and metadata for content grouping."
+            >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <Input
+                        label="Tag Name"
+                        placeholder="e.g. Streetwear Fashion"
+                        value={form.data.name}
+                        onChange={(e) => {
+                            form.setData('name', e.target.value);
+                            if (!editingItem) {
+                                form.setData('slug', e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
+                            }
+                        }}
+                        error={form.errors.name}
+                        required
+                    />
+
+                    <Input
+                        label="Slug (Without #)"
+                        placeholder="e.g. streetwear-fashion"
+                        value={form.data.slug}
+                        onChange={(e) => form.setData('slug', e.target.value)}
+                        error={form.errors.slug}
+                        required
+                    />
+
+                    <Textarea
+                        label="Description"
+                        placeholder="Brief summary of what this tag represents..."
+                        rows={3}
+                        value={form.data.description}
+                        onChange={(e) => form.setData('description', e.target.value)}
+                        error={form.errors.description}
+                    />
+
+                    <Input
+                        label="Views Count"
+                        type="number"
+                        min="0"
+                        value={form.data.views_count}
+                        onChange={(e) => form.setData('views_count', Number(e.target.value || 0))}
+                        error={form.errors.views_count}
+                    />
+
+                    <div className="flex items-center gap-2 pt-2">
+                        <input
+                            type="checkbox"
+                            id="tag_is_active"
+                            checked={form.data.is_active}
+                            onChange={(e) => form.setData('is_active', e.target.checked)}
+                            className="rounded text-indigo-600 focus:ring-indigo-500 dark:bg-slate-900"
+                        />
+                        <label htmlFor="tag_is_active" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Active topic (visible on website navigation and filters)
+                        </label>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <Button variant="outline" size="sm" onClick={() => setModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" size="sm" loading={form.processing}>
+                            {editingItem ? 'Update Hashtag' : 'Create Hashtag'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </AuthenticatedLayout>
     );
 }

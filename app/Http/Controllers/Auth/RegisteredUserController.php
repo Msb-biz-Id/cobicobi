@@ -30,11 +30,21 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        ];
+
+        if (app(\App\Services\TurnstileService::class)->isEnabled()) {
+            $token = $request->input('cf_turnstile_response')
+                ?? $request->input('cf-turnstile-response')
+                ?? $request->input('turnstile_token');
+            $request->merge(['cf_turnstile_response' => $token]);
+            $rules['cf_turnstile_response'] = ['required', new \App\Rules\TurnstileRule()];
+        }
+
+        $request->validate($rules);
 
         $user = User::create([
             'name' => $request->name,

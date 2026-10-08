@@ -3,43 +3,39 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Str;
 
 class StoreGalleryRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:140'],
-            'slug' => ['required', 'string', 'max:170', 'regex:/^[a-z0-9-]+$/', 'unique:galleries,slug'],
-            'description' => ['nullable', 'string', 'max:3000'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'use_watermark' => ['nullable', 'boolean'],
-            'is_active' => ['required', 'boolean'],
+            'title' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string'],
+            'event_date' => ['nullable', 'date'],
+            'photographer' => ['nullable', 'string', 'max:150'],
+            'is_published' => ['boolean'],
+            // Cover album dibatasi maksimal 500 KB
+            'cover_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:500'],
+            // Multi-foto galeri dibatasi maksimal 500 KB per foto
+            'images' => ['nullable', 'array'],
+            'images.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:500'],
+            'captions' => ['nullable', 'array'],
+            'captions.*' => ['nullable', 'string', 'max:255'],
         ];
     }
 
-    protected function prepareForValidation(): void
+    public function messages(): array
     {
-        $title = (string) $this->input('title', '');
-        $slugInput = (string) $this->input('slug', '');
-
-        $this->merge([
-            'slug' => Str::slug($slugInput !== '' ? $slugInput : $title),
-            'use_watermark' => (bool) $this->boolean('use_watermark'),
-        ]);
+        return [
+            'cover_image.max' => 'Ukuran berkas sampul galeri tidak boleh melebihi 500 KB.',
+            'images.*.max' => 'Setiap foto galeri tidak boleh melebihi ukuran maksimal 500 KB.',
+            'images.*.image' => 'Berkas yang diunggah harus berupa gambar yang valid (jpeg, png, jpg, webp).',
+        ];
     }
 }

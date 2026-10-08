@@ -1,27 +1,39 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
-import { Save } from 'lucide-react';
-
-function SectionTitle({ title, description }) {
-    return (
-        <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">{title}</h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>
-        </div>
-    );
-}
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/UI/PageHeader';
+import Button from '@/Components/UI/Button';
+import Input from '@/Components/UI/Input';
+import Textarea from '@/Components/UI/Textarea';
+import MediaPickerModal from '@/Components/Media/MediaPickerModal';
+import {
+    Save,
+    Globe,
+    Image as ImageIcon,
+    Share2,
+    MapPin,
+    Search,
+    Check,
+    Upload,
+    ExternalLink,
+    X,
+} from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function WebSettings({ setting }) {
+    const [activeTab, setActiveTab] = useState('general');
+    const [mediaPickerTarget, setMediaPickerTarget] = useState(null); // 'logo' | 'icon' | 'favicon' | 'meta_thumbnail' | null
+
     const form = useForm({
         site_title: setting?.site_title ?? '',
         slogan: setting?.slogan ?? '',
         short_description: setting?.short_description ?? '',
         meta_description: setting?.meta_description ?? '',
         meta_keywords: setting?.meta_keywords ?? '',
-        logo: null,
-        icon: null,
-        favicon: null,
-        meta_thumbnail: null,
+        logo: setting?.logo_url ?? null,
+        icon: setting?.icon_url ?? null,
+        favicon: setting?.favicon_url ?? null,
+        meta_thumbnail: setting?.meta_thumbnail_url ?? null,
         contact_email: setting?.contact_email ?? '',
         contact_phone: setting?.contact_phone ?? '',
         whatsapp_number: setting?.whatsapp_number ?? '',
@@ -46,305 +58,468 @@ export default function WebSettings({ setting }) {
         form.post(route('web-settings.update'), {
             preserveScroll: true,
             forceFormData: true,
+            onSuccess: () => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Web settings updated successfully',
+                    showConfirmButton: false,
+                    timer: 2000,
+                });
+            },
         });
     };
 
-    const previewMain = [
-        ['Title', setting?.site_title],
-        ['Slogan', setting?.slogan],
-        ['Deskripsi Singkat', setting?.short_description],
-        ['Meta Description', setting?.meta_description],
-        ['Meta Keywords', setting?.meta_keywords],
-    ].filter((item) => item[1]);
+    const handleMediaSelect = (media) => {
+        if (!mediaPickerTarget) return;
+        form.setData(mediaPickerTarget, media.url);
+        setMediaPickerTarget(null);
+    };
 
-    const previewContact = [
-        ['Email', setting?.contact_email],
-        ['Phone', setting?.contact_phone],
-        ['WhatsApp', setting?.whatsapp_number],
-        ['Alamat', setting?.address],
-        ['Kota', setting?.city],
-        ['Provinsi', setting?.province],
-        ['Negara', setting?.country],
-        ['Kode Pos', setting?.postal_code],
-        ['Google Maps', setting?.google_maps_url],
-    ].filter((item) => item[1]);
+    const tabs = [
+        { id: 'general', label: 'General & Identity', icon: Globe },
+        { id: 'branding', label: 'Branding Assets', icon: ImageIcon },
+        { id: 'seo', label: 'SEO & Search Preview', icon: Search },
+        { id: 'contact', label: 'Contact & Location', icon: MapPin },
+        { id: 'socials', label: 'Social Networks', icon: Share2 },
+    ];
 
-    const previewSocials = [
-        ['Facebook', setting?.facebook_url],
-        ['Instagram', setting?.instagram_url],
-        ['YouTube', setting?.youtube_url],
-        ['TikTok', setting?.tiktok_url],
-        ['X / Twitter', setting?.x_url],
-        ['LinkedIn', setting?.linkedin_url],
-        ['Threads', setting?.threads_url],
-    ].filter((item) => item[1]);
+    const renderAssetBox = (title, key, description, dimensions) => {
+        const val = form.data[key];
+        const previewUrl =
+            typeof val === 'string'
+                ? val
+                : val instanceof File
+                  ? URL.createObjectURL(val)
+                  : null;
 
-    const previewImages = [
-        ['Logo', setting?.logo_url],
-        ['Icon', setting?.icon_url],
-        ['Favicon', setting?.favicon_url],
-        ['Meta Thumbnail', setting?.meta_thumbnail_url],
-    ].filter((item) => item[1]);
+        return (
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-slate-900/60 transition hover:border-slate-300 dark:hover:border-slate-700">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                            {title}
+                        </h4>
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            {description}
+                        </p>
+                        <span className="mt-1.5 inline-block text-[11px] font-mono text-slate-400">
+                            {dimensions}
+                        </span>
+                    </div>
 
-    const hasPreview =
-        previewMain.length > 0 ||
-        previewContact.length > 0 ||
-        previewSocials.length > 0 ||
-        previewImages.length > 0;
+                    {previewUrl && (
+                        <button
+                            type="button"
+                            onClick={() => form.setData(key, '')}
+                            className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 transition"
+                            title="Remove asset"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
+
+                <div className="mt-4 flex items-center gap-4">
+                    {previewUrl ? (
+                        <div className="relative flex h-20 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-950/50">
+                            <img
+                                src={previewUrl}
+                                alt={title}
+                                className="max-h-full max-w-full object-contain"
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/20 text-slate-400">
+                            <ImageIcon className="h-6 w-6 stroke-[1.5]" />
+                        </div>
+                    )}
+
+                    <div className="flex flex-col gap-2">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            icon={ImageIcon}
+                            onClick={() => setMediaPickerTarget(key)}
+                        >
+                            Media Library
+                        </Button>
+                        <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 transition">
+                            <Upload className="mr-1.5 h-3.5 w-3.5" />
+                            Direct Upload
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                    if (e.target.files?.[0]) {
+                                        form.setData(key, e.target.files[0]);
+                                    }
+                                }}
+                            />
+                        </label>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <AuthenticatedLayout>
             <Head title="Web Settings" />
 
-            <section className="space-y-6">
-                <header>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        Web Settings
-                    </h1>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Atur branding, SEO, media sosial, kontak, dan metadata website.
-                    </p>
-                </header>
+            <form onSubmit={submit} className="space-y-6">
+                <PageHeader
+                    title="Website Settings"
+                    subtitle="Manage global branding identity, SEO configuration, contacts and social integrations"
+                    actions={
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            icon={Save}
+                            loading={form.processing}
+                        >
+                            Save Settings
+                        </Button>
+                    }
+                />
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <form onSubmit={submit} className="space-y-6 xl:col-span-2">
-                        <section className="surface-card p-5 space-y-4">
-                            <SectionTitle
-                                title="Identitas Website"
-                                description="Judul, slogan, dan deskripsi ringkas."
-                            />
-
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-                                        Site Title
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form.data.site_title}
-                                        onChange={(event) => form.setData('site_title', event.target.value)}
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    />
-                                </div>
-
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-                                        Slogan
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={form.data.slogan}
-                                        onChange={(event) => form.setData('slogan', event.target.value)}
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    />
-                                </div>
-
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-                                        Deskripsi Singkat
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        value={form.data.short_description}
-                                        onChange={(event) => form.setData('short_description', event.target.value)}
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    />
-                                </div>
-                            </div>
-                        </section>
-
-                        <section className="surface-card p-5 space-y-4">
-                            <SectionTitle
-                                title="SEO / Meta"
-                                description="Pengaturan metadata untuk mesin pencari dan social preview."
-                            />
-
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-                                        Meta Description
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        value={form.data.meta_description}
-                                        onChange={(event) => form.setData('meta_description', event.target.value)}
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    />
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">
-                                        Meta Keywords
-                                    </label>
-                                    <textarea
-                                        rows={2}
-                                        placeholder="cms, laravel, berita, blog"
-                                        value={form.data.meta_keywords}
-                                        onChange={(event) => form.setData('meta_keywords', event.target.value)}
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    />
-                                </div>
-                            </div>
-                        </section>
-
-                        <section className="surface-card p-5 space-y-4">
-                            <SectionTitle
-                                title="Branding Assets"
-                                description="Upload logo, icon, favicon, dan meta thumbnail."
-                            />
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Logo</label>
-                                    <input type="file" accept="image/*" onChange={(event) => form.setData('logo', event.target.files?.[0] ?? null)} className="w-full rounded-[0.625rem] border border-slate-300 bg-white text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Icon</label>
-                                    <input type="file" accept="image/*" onChange={(event) => form.setData('icon', event.target.files?.[0] ?? null)} className="w-full rounded-[0.625rem] border border-slate-300 bg-white text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Favicon</label>
-                                    <input type="file" accept=".ico,.png,.svg,.webp" onChange={(event) => form.setData('favicon', event.target.files?.[0] ?? null)} className="w-full rounded-[0.625rem] border border-slate-300 bg-white text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Meta Thumbnail</label>
-                                    <input type="file" accept="image/*" onChange={(event) => form.setData('meta_thumbnail', event.target.files?.[0] ?? null)} className="w-full rounded-[0.625rem] border border-slate-300 bg-white text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                            </div>
-                        </section>
-
-                        <section className="surface-card p-5 space-y-4">
-                            <SectionTitle
-                                title="Kontak & Alamat"
-                                description="Data ini bisa dipakai di footer / halaman kontak."
-                            />
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Email</label>
-                                    <input type="email" value={form.data.contact_email} onChange={(event) => form.setData('contact_email', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Phone</label>
-                                    <input type="text" value={form.data.contact_phone} onChange={(event) => form.setData('contact_phone', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">WhatsApp</label>
-                                    <input type="text" value={form.data.whatsapp_number} onChange={(event) => form.setData('whatsapp_number', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Kode Pos</label>
-                                    <input type="text" value={form.data.postal_code} onChange={(event) => form.setData('postal_code', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <div className="sm:col-span-2">
-                                    <label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Alamat</label>
-                                    <textarea rows={2} value={form.data.address} onChange={(event) => form.setData('address', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <div><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Kota</label><input type="text" value={form.data.city} onChange={(event) => form.setData('city', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                                <div><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Provinsi</label><input type="text" value={form.data.province} onChange={(event) => form.setData('province', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                                <div className="sm:col-span-2"><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Negara</label><input type="text" value={form.data.country} onChange={(event) => form.setData('country', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                                <div className="sm:col-span-2"><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Google Maps URL</label><input type="url" value={form.data.google_maps_url} onChange={(event) => form.setData('google_maps_url', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                            </div>
-                        </section>
-
-                        <section className="surface-card p-5 space-y-4">
-                            <SectionTitle
-                                title="Media Sosial"
-                                description="Isi link yang aktif saja. Kosongkan jika tidak dipakai."
-                            />
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Facebook</label><input type="url" value={form.data.facebook_url} onChange={(event) => form.setData('facebook_url', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                                <div><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Instagram</label><input type="url" value={form.data.instagram_url} onChange={(event) => form.setData('instagram_url', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                                <div><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">YouTube</label><input type="url" value={form.data.youtube_url} onChange={(event) => form.setData('youtube_url', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                                <div><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">TikTok</label><input type="url" value={form.data.tiktok_url} onChange={(event) => form.setData('tiktok_url', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                                <div><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">X / Twitter</label><input type="url" value={form.data.x_url} onChange={(event) => form.setData('x_url', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                                <div><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">LinkedIn</label><input type="url" value={form.data.linkedin_url} onChange={(event) => form.setData('linkedin_url', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                                <div className="sm:col-span-2"><label className="mb-1 block text-sm font-medium text-slate-600 dark:text-slate-300">Threads</label><input type="url" value={form.data.threads_url} onChange={(event) => form.setData('threads_url', event.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" /></div>
-                            </div>
-                        </section>
-
-                        <div className="flex justify-end">
+                {/* Modern Navigation Tabs */}
+                <div className="flex flex-wrap gap-2 border-b border-slate-200/80 pb-3 dark:border-slate-800">
+                    {tabs.map((tab) => {
+                        const Icon = tab.icon;
+                        const active = activeTab === tab.id;
+                        return (
                             <button
-                                type="submit"
-                                disabled={form.processing}
-                                className="inline-flex items-center gap-2 rounded-[0.625rem] bg-primary px-4 py-2 text-sm font-semibold text-white transition-opacity duration-200 hover:opacity-90 disabled:opacity-60"
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition ${
+                                    active
+                                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/20'
+                                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
+                                }`}
                             >
-                                <Save className="h-4 w-4" />
-                                Simpan Web Settings
+                                <Icon className="h-4 w-4" />
+                                {tab.label}
                             </button>
-                        </div>
-                    </form>
-
-                    <aside className="surface-card h-fit p-5 xl:sticky xl:top-24">
-                        <SectionTitle
-                            title="Preview Output"
-                            description="Hanya data yang terisi yang akan ditampilkan."
-                        />
-
-                        {!hasPreview && (
-                            <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-                                Belum ada data yang terisi.
-                            </p>
-                        )}
-
-                        {hasPreview && (
-                            <div className="mt-4 space-y-4 text-sm">
-                                {previewImages.length > 0 && (
-                                    <div>
-                                        <p className="mb-2 font-semibold text-slate-700 dark:text-slate-200">
-                                            Branding
-                                        </p>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            {previewImages.map(([label, url]) => (
-                                                <div key={label} className="rounded-md border border-slate-200 p-2 dark:border-border-dark">
-                                                    <p className="mb-2 text-xs font-semibold uppercase text-slate-500">{label}</p>
-                                                    <img src={url} alt={label} className="h-14 w-full object-contain" />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {previewMain.length > 0 && (
-                                    <div>
-                                        <p className="mb-2 font-semibold text-slate-700 dark:text-slate-200">Informasi Utama</p>
-                                        <ul className="space-y-1">
-                                            {previewMain.map(([label, value]) => (
-                                                <li key={label} className="text-slate-600 dark:text-slate-300">
-                                                    <span className="font-medium">{label}:</span> {value}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-
-                                {previewContact.length > 0 && (
-                                    <div>
-                                        <p className="mb-2 font-semibold text-slate-700 dark:text-slate-200">Kontak</p>
-                                        <ul className="space-y-1">
-                                            {previewContact.map(([label, value]) => (
-                                                <li key={label} className="text-slate-600 dark:text-slate-300">
-                                                    <span className="font-medium">{label}:</span> {value}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-
-                                {previewSocials.length > 0 && (
-                                    <div>
-                                        <p className="mb-2 font-semibold text-slate-700 dark:text-slate-200">Media Sosial</p>
-                                        <ul className="space-y-1">
-                                            {previewSocials.map(([label, value]) => (
-                                                <li key={label} className="text-slate-600 dark:text-slate-300">
-                                                    <span className="font-medium">{label}:</span> {value}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </aside>
+                        );
+                    })}
                 </div>
-            </section>
+
+                {/* Tab: General */}
+                {activeTab === 'general' && (
+                    <div className="surface-card p-6 space-y-5">
+                        <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                Basic Information
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Global website title and primary taglines.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            <div className="sm:col-span-2">
+                                <Input
+                                    label="Site Title"
+                                    value={form.data.site_title}
+                                    onChange={(e) => form.setData('site_title', e.target.value)}
+                                    placeholder="e.g. Apparel Studio CMS"
+                                    error={form.errors.site_title}
+                                    required
+                                />
+                            </div>
+
+                            <div className="sm:col-span-2">
+                                <Input
+                                    label="Slogan / Tagline"
+                                    value={form.data.slogan}
+                                    onChange={(e) => form.setData('slogan', e.target.value)}
+                                    placeholder="e.g. Modern Minimalist Fashion & Editorial Stories"
+                                    error={form.errors.slogan}
+                                />
+                            </div>
+
+                            <div className="sm:col-span-2">
+                                <Textarea
+                                    label="Short Description"
+                                    rows={3}
+                                    value={form.data.short_description}
+                                    onChange={(e) => form.setData('short_description', e.target.value)}
+                                    placeholder="A concise description used across the site footer and about widgets..."
+                                    error={form.errors.short_description}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Tab: Branding */}
+                {activeTab === 'branding' && (
+                    <div className="space-y-6">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            {renderAssetBox(
+                                'Main Brand Logo',
+                                'logo',
+                                'Main brand logo for the navbar and dark/light headers.',
+                                'Recommended: SVG or PNG, transparent background'
+                            )}
+                            {renderAssetBox(
+                                'Favicon',
+                                'favicon',
+                                'Browser tab icon bookmark symbol.',
+                                'Recommended: 32x32px or 64x64px .ico / .png'
+                            )}
+                            {renderAssetBox(
+                                'App Icon / Mobile Icon',
+                                'icon',
+                                'Square icon for PWA, bookmarks, or mobile homescreen.',
+                                'Recommended: 512x512px PNG'
+                            )}
+                            {renderAssetBox(
+                                'Meta / OpenGraph Image',
+                                'meta_thumbnail',
+                                'Image shown when links are shared on Twitter, WhatsApp, FB.',
+                                'Recommended: 1200x630px JPG/WebP'
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Tab: SEO */}
+                {activeTab === 'seo' && (
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        <div className="surface-card p-6 space-y-5 lg:col-span-2">
+                            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                    Search Engine Optimization (SEO)
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Configure metadata tags that appear in Google, Bing and social platforms.
+                                </p>
+                            </div>
+
+                            <Textarea
+                                label="Meta Description"
+                                rows={4}
+                                value={form.data.meta_description}
+                                onChange={(e) => form.setData('meta_description', e.target.value)}
+                                placeholder="Describe your publication in 150-160 characters for high search click-through rates..."
+                                error={form.errors.meta_description}
+                            />
+
+                            <Textarea
+                                label="Meta Keywords"
+                                rows={3}
+                                value={form.data.meta_keywords}
+                                onChange={(e) => form.setData('meta_keywords', e.target.value)}
+                                placeholder="apparel, streetwear, editorial, high fashion, lifestyle"
+                                error={form.errors.meta_keywords}
+                            />
+                        </div>
+
+                        {/* Live Google Search Snippet Preview */}
+                        <div className="surface-card p-6 space-y-3">
+                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                Google SERP Preview
+                            </h3>
+                            <div className="rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                                <div className="flex items-center gap-2">
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-indigo-600 dark:bg-slate-800">
+                                        W
+                                    </span>
+                                    <div className="flex flex-col text-[11px] leading-tight text-slate-500 dark:text-slate-400">
+                                        <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                            {form.data.site_title || 'Your Site Title'}
+                                        </span>
+                                        <span className="truncate text-slate-400 font-mono text-[10px]">
+                                            https://yoursite.com
+                                        </span>
+                                    </div>
+                                </div>
+                                <h4 className="mt-2 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400 cursor-pointer">
+                                    {form.data.site_title || 'Site Title'} - {form.data.slogan || 'Official Website'}
+                                </h4>
+                                <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                                    {form.data.meta_description ||
+                                        'Provide a meta description above to preview how your site snippet appears to searchers on Google.'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Tab: Contact & Location */}
+                {activeTab === 'contact' && (
+                    <div className="surface-card p-6 space-y-5">
+                        <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                Contact Information & Address
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                These details are displayed across your website header, footer and contact pages.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            <Input
+                                label="Contact Email"
+                                type="email"
+                                value={form.data.contact_email}
+                                onChange={(e) => form.setData('contact_email', e.target.value)}
+                                placeholder="hello@brand.com"
+                                error={form.errors.contact_email}
+                            />
+                            <Input
+                                label="Phone Number"
+                                value={form.data.contact_phone}
+                                onChange={(e) => form.setData('contact_phone', e.target.value)}
+                                placeholder="+62 812-3456-7890"
+                                error={form.errors.contact_phone}
+                            />
+                            <Input
+                                label="WhatsApp Number"
+                                value={form.data.whatsapp_number}
+                                onChange={(e) => form.setData('whatsapp_number', e.target.value)}
+                                placeholder="+62 812-3456-7890"
+                                error={form.errors.whatsapp_number}
+                            />
+
+                            <div className="sm:col-span-3">
+                                <Textarea
+                                    label="Street Address"
+                                    rows={2}
+                                    value={form.data.address}
+                                    onChange={(e) => form.setData('address', e.target.value)}
+                                    placeholder="Jalan Kemang Raya No. 12, South Jakarta"
+                                    error={form.errors.address}
+                                />
+                            </div>
+
+                            <Input
+                                label="City"
+                                value={form.data.city}
+                                onChange={(e) => form.setData('city', e.target.value)}
+                                placeholder="Jakarta Selatan"
+                                error={form.errors.city}
+                            />
+                            <Input
+                                label="Province / State"
+                                value={form.data.province}
+                                onChange={(e) => form.setData('province', e.target.value)}
+                                placeholder="DKI Jakarta"
+                                error={form.errors.province}
+                            />
+                            <Input
+                                label="Postal Code"
+                                value={form.data.postal_code}
+                                onChange={(e) => form.setData('postal_code', e.target.value)}
+                                placeholder="12730"
+                                error={form.errors.postal_code}
+                            />
+
+                            <div className="sm:col-span-3">
+                                <Input
+                                    label="Country"
+                                    value={form.data.country}
+                                    onChange={(e) => form.setData('country', e.target.value)}
+                                    placeholder="Indonesia"
+                                    error={form.errors.country}
+                                />
+                            </div>
+
+                            <div className="sm:col-span-3">
+                                <Input
+                                    label="Google Maps Embed / URL"
+                                    value={form.data.google_maps_url}
+                                    onChange={(e) => form.setData('google_maps_url', e.target.value)}
+                                    placeholder="https://maps.google.com/?q=..."
+                                    error={form.errors.google_maps_url}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Tab: Socials */}
+                {activeTab === 'socials' && (
+                    <div className="surface-card p-6 space-y-5">
+                        <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                Social Media Links
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Leave blank any channels you do not actively maintain.
+                            </p>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Input
+                                label="Instagram"
+                                value={form.data.instagram_url}
+                                onChange={(e) => form.setData('instagram_url', e.target.value)}
+                                placeholder="https://instagram.com/brand"
+                                error={form.errors.instagram_url}
+                            />
+                            <Input
+                                label="TikTok"
+                                value={form.data.tiktok_url}
+                                onChange={(e) => form.setData('tiktok_url', e.target.value)}
+                                placeholder="https://tiktok.com/@brand"
+                                error={form.errors.tiktok_url}
+                            />
+                            <Input
+                                label="YouTube"
+                                value={form.data.youtube_url}
+                                onChange={(e) => form.setData('youtube_url', e.target.value)}
+                                placeholder="https://youtube.com/@brand"
+                                error={form.errors.youtube_url}
+                            />
+                            <Input
+                                label="X (Twitter)"
+                                value={form.data.x_url}
+                                onChange={(e) => form.setData('x_url', e.target.value)}
+                                placeholder="https://x.com/brand"
+                                error={form.errors.x_url}
+                            />
+                            <Input
+                                label="Facebook"
+                                value={form.data.facebook_url}
+                                onChange={(e) => form.setData('facebook_url', e.target.value)}
+                                placeholder="https://facebook.com/brand"
+                                error={form.errors.facebook_url}
+                            />
+                            <Input
+                                label="LinkedIn"
+                                value={form.data.linkedin_url}
+                                onChange={(e) => form.setData('linkedin_url', e.target.value)}
+                                placeholder="https://linkedin.com/company/brand"
+                                error={form.errors.linkedin_url}
+                            />
+                            <div className="sm:col-span-2">
+                                <Input
+                                    label="Threads"
+                                    value={form.data.threads_url}
+                                    onChange={(e) => form.setData('threads_url', e.target.value)}
+                                    placeholder="https://threads.net/@brand"
+                                    error={form.errors.threads_url}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </form>
+
+            {/* Media Picker Modal */}
+            <MediaPickerModal
+                show={Boolean(mediaPickerTarget)}
+                onClose={() => setMediaPickerTarget(null)}
+                onSelect={handleMediaSelect}
+                title={`Select ${mediaPickerTarget?.replace('_', ' ')?.toUpperCase()}`}
+            />
         </AuthenticatedLayout>
     );
 }

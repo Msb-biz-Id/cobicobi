@@ -3,52 +3,42 @@
 namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class UpdateGalleryRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
-        $galleryId = $this->route('gallery')?->id;
-
         return [
-            'title' => ['required', 'string', 'max:140'],
-            'slug' => [
-                'required',
-                'string',
-                'max:170',
-                'regex:/^[a-z0-9-]+$/',
-                Rule::unique('galleries', 'slug')->ignore($galleryId),
-            ],
-            'description' => ['nullable', 'string', 'max:3000'],
-            'cover_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'use_watermark' => ['nullable', 'boolean'],
-            'is_active' => ['required', 'boolean'],
+            'title' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string'],
+            'event_date' => ['nullable', 'date'],
+            'photographer' => ['nullable', 'string', 'max:150'],
+            'is_published' => ['boolean'],
+            // Cover album dibatasi maksimal 500 KB jika diunggah baru
+            'cover_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:500'],
+            // Multi-foto galeri baru dibatasi maksimal 500 KB per foto
+            'new_images' => ['nullable', 'array'],
+            'new_images.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:500'],
+            'new_captions' => ['nullable', 'array'],
+            'new_captions.*' => ['nullable', 'string', 'max:255'],
+            'existing_captions' => ['nullable', 'array'],
+            'delete_image_ids' => ['nullable', 'array'],
+            'delete_image_ids.*' => ['integer'],
         ];
     }
 
-    protected function prepareForValidation(): void
+    public function messages(): array
     {
-        $title = (string) $this->input('title', '');
-        $slugInput = (string) $this->input('slug', '');
-
-        $this->merge([
-            'slug' => Str::slug($slugInput !== '' ? $slugInput : $title),
-            'use_watermark' => (bool) $this->boolean('use_watermark'),
-        ]);
+        return [
+            'cover_image.max' => 'Ukuran berkas sampul galeri tidak boleh melebihi 500 KB.',
+            'new_images.*.max' => 'Setiap foto baru galeri tidak boleh melebihi ukuran maksimal 500 KB.',
+            'new_images.*.image' => 'Berkas yang diunggah harus berupa gambar yang valid (jpeg, png, jpg, webp).',
+        ];
     }
 }

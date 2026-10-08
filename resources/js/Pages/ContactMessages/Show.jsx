@@ -1,26 +1,58 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowLeft, MailOpen, ShieldAlert, Trash2, Undo2 } from 'lucide-react';
+import PageHeader from '@/Components/UI/PageHeader';
+import Button from '@/Components/UI/Button';
+import Badge from '@/Components/UI/Badge';
+import {
+    ArrowLeft,
+    Mail,
+    Phone,
+    Calendar,
+    Globe,
+    Undo2,
+    Trash2,
+    Reply,
+    Shield,
+} from 'lucide-react';
 import Swal from 'sweetalert2';
+
+function getInitials(name) {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+}
 
 export default function ContactMessagesShow({ message }) {
     const markUnread = () => {
         router.put(
             route('contact-messages.mark-unread', message.id),
             {},
-            { preserveScroll: true },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'info',
+                        title: 'Tandai sebagai belum dibaca',
+                        showConfirmButton: false,
+                        timer: 1500,
+                    });
+                },
+            },
         );
     };
 
     const deleteItem = async () => {
         const result = await Swal.fire({
-            title: 'Hapus kontak masuk?',
-            text: `Data dari ${message.name} akan dihapus permanen.`,
+            title: 'Hapus Pesan Masuk?',
+            text: `Pesan dari "${message.name}" akan dihapus permanen.`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Ya, hapus',
+            confirmButtonText: 'Ya, Hapus',
             cancelButtonText: 'Batal',
-            confirmButtonColor: '#ef4444',
+            confirmButtonColor: '#e11d48',
         });
 
         if (!result.isConfirmed) return;
@@ -34,130 +66,122 @@ export default function ContactMessagesShow({ message }) {
 
     return (
         <AuthenticatedLayout>
-            <Head title={`Detail Kontak - ${message.name}`} />
+            <Head title={`Message from ${message.name}`} />
 
-            <section className="space-y-6">
-                <header className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                            Detail Kontak Masuk
-                        </h1>
-                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            Informasi lengkap pesan kontak dari pengunjung laman.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Link
-                            href={route('contact-messages.index')}
-                            className="inline-flex items-center gap-2 rounded-[0.625rem] border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800"
-                        >
-                            <ArrowLeft className="h-4 w-4" /> Kembali
-                        </Link>
-                        <button
-                            type="button"
-                            onClick={markUnread}
-                            className="inline-flex items-center gap-2 rounded-[0.625rem] border border-amber-200 px-3 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 dark:border-amber-500/30 dark:text-amber-300 dark:hover:bg-amber-500/10"
-                        >
-                            <Undo2 className="h-4 w-4" /> Tandai Belum Dibaca
-                        </button>
-                        <button
-                            type="button"
-                            onClick={deleteItem}
-                            className="inline-flex items-center gap-2 rounded-[0.625rem] border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10"
-                        >
-                            <Trash2 className="h-4 w-4" /> Hapus
-                        </button>
-                    </div>
-                </header>
-
-                <article className="surface-card p-5">
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                Nama
-                            </p>
-                            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                                {message.name}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                Email
-                            </p>
-                            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                                {message.email}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                No. HP
-                            </p>
-                            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                                {message.phone_number}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                Status
-                            </p>
-                            <p
-                                className={`mt-1 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${
-                                    message.is_read
-                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
-                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
-                                }`}
+            <div className="space-y-6 max-w-5xl mx-auto">
+                <PageHeader
+                    title="Inquiry Details"
+                    subtitle={`Received from ${message.name} on ${message.created_at}`}
+                    actions={
+                        <div className="flex items-center gap-2">
+                            <Link href={route('contact-messages.index')}>
+                                <Button variant="outline" size="sm" icon={ArrowLeft}>
+                                    Back to Inbox
+                                </Button>
+                            </Link>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                icon={Undo2}
+                                onClick={markUnread}
                             >
-                                <MailOpen className="h-3.5 w-3.5" />
-                                {message.is_read ? 'Sudah dibaca' : 'Belum dibaca'}
-                            </p>
+                                Mark Unread
+                            </Button>
+                            <a
+                                href={`mailto:${message.email}?subject=Re: Inquiry from ${encodeURIComponent(
+                                    message.name,
+                                )}`}
+                            >
+                                <Button variant="primary" size="sm" icon={Reply}>
+                                    Reply via Email
+                                </Button>
+                            </a>
+                            <Button
+                                variant="danger"
+                                size="sm"
+                                icon={Trash2}
+                                onClick={deleteItem}
+                            >
+                                Delete
+                            </Button>
+                        </div>
+                    }
+                />
+
+                {/* Main Message Card */}
+                <div className="surface-card overflow-hidden">
+                    {/* Header info */}
+                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-sm font-bold text-white shadow-md shadow-indigo-500/20">
+                                    {getInitials(message.name)}
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                            {message.name}
+                                        </h3>
+                                        <Badge variant={message.is_read ? 'neutral' : 'indigo'} size="sm">
+                                            {message.is_read ? 'Read' : 'New Unread'}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                        <span className="flex items-center gap-1 font-mono">
+                                            <Mail className="h-3 w-3 text-slate-400" />
+                                            {message.email}
+                                        </span>
+                                        {message.phone_number && (
+                                            <span className="flex items-center gap-1 font-mono">
+                                                <Phone className="h-3 w-3 text-slate-400" />
+                                                {message.phone_number}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="text-right text-xs text-slate-400">
+                                <div className="flex items-center gap-1 font-mono sm:justify-end">
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    {message.created_at}
+                                </div>
+                                {message.read_at && (
+                                    <div className="mt-0.5 text-[11px] text-slate-400">
+                                        First read: {message.read_at}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                Waktu Masuk
-                            </p>
-                            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                                {message.created_at}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                Dibaca Pada
-                            </p>
-                            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                                {message.read_at || '-'}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                IP Address
-                            </p>
-                            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
-                                {message.ip_address || '-'}
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                                Source URL
-                            </p>
-                            <p className="mt-1 break-all text-sm text-slate-700 dark:text-slate-200">
-                                {message.source_url || '-'}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 rounded-[0.625rem] border border-slate-200 bg-slate-50 p-4 dark:border-border-dark dark:bg-slate-900/20">
-                        <p className="mb-2 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                            <ShieldAlert className="h-3.5 w-3.5" /> Isi Pesan
-                        </p>
-                        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                    {/* Message Body */}
+                    <div className="p-6 sm:p-8">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">
+                            Message Content
+                        </h4>
+                        <div className="rounded-2xl border border-slate-200/80 bg-white p-6 dark:border-slate-800 dark:bg-slate-900/60 shadow-sm text-sm leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans">
                             {message.message}
-                        </p>
+                        </div>
                     </div>
-                </article>
-            </section>
+
+                    {/* Technical Metadata Footer */}
+                    <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20 text-xs text-slate-500 dark:text-slate-400 flex flex-wrap gap-6">
+                        {message.ip_address && (
+                            <span className="flex items-center gap-1.5 font-mono text-[11px]">
+                                <Shield className="h-3.5 w-3.5 text-slate-400" />
+                                IP: {message.ip_address}
+                            </span>
+                        )}
+                        {message.source_url && (
+                            <span className="flex items-center gap-1.5 text-[11px]">
+                                <Globe className="h-3.5 w-3.5 text-slate-400" />
+                                Sent from: <span className="font-mono">{message.source_url}</span>
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
         </AuthenticatedLayout>
     );
 }

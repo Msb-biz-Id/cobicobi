@@ -1,215 +1,278 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Eye, FolderKanban, Image as ImageIcon, Pencil, Plus, Search, Trash2, XCircle } from 'lucide-react';
 import { useState } from 'react';
+import { Head, router, useForm } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/UI/PageHeader';
+import Button from '@/Components/UI/Button';
+import Input from '@/Components/UI/Input';
+import Textarea from '@/Components/UI/Textarea';
+import Badge from '@/Components/UI/Badge';
+import EmptyState from '@/Components/UI/EmptyState';
+import Pagination from '@/Components/UI/Pagination';
+import Modal from '@/Components/UI/Modal';
+import { Plus, Search, Edit3, Trash2, FolderKanban, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 
-const defaultData = {
-    name: '',
-    slug: '',
-    description: '',
-    image: null,
-    views_count: 0,
-    is_active: true,
-};
-
-export default function CategoriesIndex({ categories, filters, topCategories, stats }) {
-    const [search, setSearch] = useState(filters.search ?? '');
+export default function CategoriesIndex({ categories, filters = {}, stats = {} }) {
+    const [search, setSearch] = useState(filters.search || '');
+    const [modalOpen, setModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
 
-    const form = useForm(defaultData);
+    const form = useForm({
+        name: '',
+        slug: '',
+        description: '',
+        is_active: true,
+    });
 
-    const submit = (event) => {
-        event.preventDefault();
-
-        if (editingItem) {
-            form.transform((data) => ({ ...data, _method: 'put' })).post(route('categories.update', editingItem.id), {
-                preserveScroll: true,
-                forceFormData: true,
-                onSuccess: () => {
-                    form.reset();
-                    setEditingItem(null);
-                },
-            });
-            return;
-        }
-
-        form.post(route('categories.store'), {
-            preserveScroll: true,
-            forceFormData: true,
-            onSuccess: () => form.reset(),
-        });
-    };
-
-    const applySearch = (event) => {
-        event.preventDefault();
-        router.get(route('categories.index'), { search }, { preserveScroll: true, preserveState: true, replace: true });
-    };
-
-    const resetSearch = () => {
-        setSearch('');
-        router.get(route('categories.index'), {}, { preserveScroll: true, preserveState: true, replace: true });
-    };
-
-    const editItem = (item) => {
-        setEditingItem(item);
-        form.setData({
-            name: item.name,
-            slug: item.slug,
-            description: item.description ?? '',
-            image: null,
-            views_count: item.views_count ?? 0,
-            is_active: item.is_active,
-        });
-        form.clearErrors();
-    };
-
-    const cancelEdit = () => {
+    const openCreate = () => {
         setEditingItem(null);
         form.reset();
-        form.clearErrors();
+        setModalOpen(true);
     };
 
-    const deleteItem = async (item) => {
-        const result = await Swal.fire({
-            title: 'Hapus kategori?',
-            text: `Kategori ${item.name} akan dihapus permanen.`,
+    const openEdit = (cat) => {
+        setEditingItem(cat);
+        form.setData({
+            name: cat.name,
+            slug: cat.slug,
+            description: cat.description || '',
+            is_active: cat.is_active ?? true,
+        });
+        setModalOpen(true);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (editingItem) {
+            form.put(route('categories.update', editingItem.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Kategori berhasil diperbarui',
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
+                },
+            });
+        } else {
+            form.post(route('categories.store'), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Kategori baru berhasil dibuat',
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
+                },
+            });
+        }
+    };
+
+    const handleDelete = (cat) => {
+        Swal.fire({
+            title: 'Hapus Kategori?',
+            text: `Yakin ingin menghapus kategori "${cat.name}"?`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Ya, hapus',
+            confirmButtonText: 'Ya, Hapus',
             cancelButtonText: 'Batal',
-            confirmButtonColor: '#ef4444',
+            confirmButtonColor: '#e11d48',
+        }).then((res) => {
+            if (res.isConfirmed) {
+                router.delete(route('categories.destroy', cat.id), {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        Swal.fire('Terhapus!', 'Kategori telah dihapus.', 'success');
+                    },
+                });
+            }
         });
-
-        if (!result.isConfirmed) return;
-
-        router.delete(route('categories.destroy', item.id), { preserveScroll: true });
     };
 
-    const statCards = [
-        { label: 'Total Kategori', value: stats.total, icon: FolderKanban, color: 'text-primary' },
-        { label: 'Active', value: stats.active, icon: ImageIcon, color: 'text-emerald-500' },
-        { label: 'Inactive', value: stats.inactive, icon: XCircle, color: 'text-rose-500' },
-        { label: 'Total Views', value: stats.views, icon: Eye, color: 'text-sky-500' },
-    ];
+    const handleSearch = (e) => {
+        e.preventDefault();
+        router.get(
+            route('categories.index'),
+            { search },
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    };
 
     return (
         <AuthenticatedLayout>
-            <Head title="Kelola Kategori" />
+            <Head title="Categories" />
 
-            <section className="space-y-6">
-                <header>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Kelola Kategori</h1>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">CRUD kategori + upload gambar/SVG + ranking kategori paling banyak di views.</p>
-                </header>
+            <PageHeader
+                title="Categories"
+                subtitle="Organize articles and content into clear taxonomic sections"
+                actions={
+                    <Button size="sm" variant="primary" icon={Plus} onClick={openCreate}>
+                        New Category
+                    </Button>
+                }
+            />
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {statCards.map((card) => {
-                        const Icon = card.icon;
-                        return (
-                            <article key={card.label} className="surface-card p-5">
-                                <div className="mb-4 flex items-center justify-between">
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
-                                    <Icon className={`h-5 w-5 ${card.color}`} />
-                                </div>
-                                <p className="text-3xl font-bold text-slate-900 dark:text-white">{card.value.toLocaleString()}</p>
-                            </article>
-                        );
-                    })}
+            <div className="surface-card overflow-hidden">
+                {/* Search Bar */}
+                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/40">
+                    <form onSubmit={handleSearch} className="relative w-full sm:max-w-xs">
+                        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Search categories..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                        />
+                    </form>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <section className="surface-card p-5 xl:col-span-1">
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">{editingItem ? 'Edit Kategori' : 'Tambah Kategori'}</h2>
-                        <form onSubmit={submit} className="mt-4 space-y-3">
-                            <input type="text" placeholder="Nama kategori" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <input type="text" placeholder="Slug (opsional)" value={form.data.slug} onChange={(e) => form.setData('slug', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <textarea rows={3} placeholder="Deskripsi" value={form.data.description} onChange={(e) => form.setData('description', e.target.value)} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <input type="file" accept=".jpg,.jpeg,.png,.webp,.svg" onChange={(e) => form.setData('image', e.target.files?.[0] ?? null)} className="w-full rounded-[0.625rem] border border-slate-300 bg-white text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-white dark:border-border-dark dark:bg-slate-900/30" />
-                            <input type="number" min="0" placeholder="Views" value={form.data.views_count} onChange={(e) => form.setData('views_count', Number(e.target.value || 0))} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                            <select value={form.data.is_active ? '1' : '0'} onChange={(e) => form.setData('is_active', e.target.value === '1')} className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30">
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
-                            </select>
-                            <div className="flex justify-end gap-2">
-                                {editingItem && <button type="button" onClick={cancelEdit} className="rounded-[0.625rem] border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800">Batal</button>}
-                                <button type="submit" className="inline-flex items-center gap-2 rounded-[0.625rem] bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"><Plus className="h-4 w-4" />{editingItem ? 'Perbarui' : 'Simpan'}</button>
-                            </div>
-                        </form>
-                    </section>
-
-                    <section className="surface-card overflow-hidden xl:col-span-2">
-                        <form onSubmit={applySearch} className="border-b border-slate-200 p-4 dark:border-border-dark">
-                            <div className="flex gap-2">
-                                <div className="relative flex-1">
-                                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                    <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari kategori..." className="w-full rounded-[0.625rem] border-slate-300 bg-white pl-9 text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30" />
-                                </div>
-                                <button type="button" onClick={resetSearch} className="rounded-[0.625rem] border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800">Reset</button>
-                            </div>
-                        </form>
-
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200 dark:divide-border-dark">
-                                <thead className="bg-slate-50 dark:bg-slate-900/20">
-                                    <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Kategori</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Views</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
-                                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
-                                    {categories.data.map((item) => (
-                                        <tr key={item.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-3">
-                                                    {item.image_url ? <img src={item.image_url} alt={item.name} className="h-10 w-10 rounded-md object-cover" /> : <span className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 text-slate-400 dark:bg-slate-800"><ImageIcon className="h-4 w-4" /></span>}
-                                                    <div>
-                                                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{item.name}</p>
-                                                        <p className="text-xs text-slate-500 dark:text-slate-400">{item.slug}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">{item.views_count.toLocaleString()}</td>
-                                            <td className="px-4 py-3"><span className={`rounded-md px-2 py-1 text-xs font-semibold ${item.is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'}`}>{item.is_active ? 'Active' : 'Inactive'}</span></td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-end gap-1">
-                                                    <button type="button" onClick={() => editItem(item)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800"><Pencil className="h-4 w-4" /></button>
-                                                    <button type="button" onClick={() => deleteItem(item)} className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10"><Trash2 className="h-4 w-4" /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="flex flex-wrap justify-end gap-1 border-t border-slate-200 px-4 py-3 dark:border-border-dark">
-                            {categories.links.map((link) => (
-                                <Link key={link.label} href={link.url || '#'} preserveScroll preserveState className={`rounded-md border px-3 py-1.5 text-sm ${link.active ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800'} ${!link.url ? 'pointer-events-none opacity-40' : ''}`} dangerouslySetInnerHTML={{ __html: link.label }} />
-                            ))}
-                        </div>
-                    </section>
-                </div>
-
-                <section className="surface-card p-5">
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">Kategori Paling Banyak di Views</h2>
-                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-                        {topCategories.map((item, idx) => (
-                            <article key={item.id} className="rounded-[0.625rem] border border-slate-200 p-3 dark:border-border-dark">
-                                <p className="text-xs font-semibold text-slate-500">#{idx + 1}</p>
-                                <div className="mt-2 flex items-center gap-2">
-                                    {item.image_url ? <img src={item.image_url} alt={item.name} className="h-8 w-8 rounded object-cover" /> : <span className="inline-flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-slate-400 dark:bg-slate-800"><ImageIcon className="h-4 w-4" /></span>}
-                                    <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{item.name}</p>
-                                </div>
-                                <p className="mt-2 text-xs text-slate-500">{item.views_count.toLocaleString()} views</p>
-                            </article>
-                        ))}
-                        {topCategories.length === 0 && <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada data kategori.</p>}
+                {/* Table */}
+                {categories?.data?.length === 0 ? (
+                    <div className="p-8">
+                        <EmptyState
+                            icon={FolderKanban}
+                            title="No categories found"
+                            description="Create a category to group your editorial content."
+                            actionLabel="Add Category"
+                            onAction={openCreate}
+                            actionIcon={Plus}
+                        />
                     </div>
-                </section>
-            </section>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                            <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                                <tr>
+                                    <th className="py-3.5 pl-5 pr-3">Name</th>
+                                    <th className="py-3.5 px-3">Slug</th>
+                                    <th className="py-3.5 px-3">Description</th>
+                                    <th className="py-3.5 px-3">Status</th>
+                                    <th className="py-3.5 pl-3 pr-5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                                {categories.data.map((cat) => (
+                                    <tr
+                                        key={cat.id}
+                                        className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors"
+                                    >
+                                        <td className="py-3.5 pl-5 pr-3 font-semibold text-slate-900 dark:text-white text-sm">
+                                            {cat.name}
+                                        </td>
+                                        <td className="py-3.5 px-3 text-slate-500 dark:text-slate-400">
+                                            /{cat.slug}
+                                        </td>
+                                        <td className="py-3.5 px-3 text-slate-500 dark:text-slate-400 max-w-xs truncate">
+                                            {cat.description || '-'}
+                                        </td>
+                                        <td className="py-3.5 px-3">
+                                            <Badge variant={cat.is_active ? 'success' : 'neutral'} size="sm">
+                                                {cat.is_active ? 'Active' : 'Disabled'}
+                                            </Badge>
+                                        </td>
+                                        <td className="py-3.5 pl-3 pr-5 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEdit(cat)}
+                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit3 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDelete(cat)}
+                                                    className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
+                    <Pagination links={categories?.links} meta={categories} />
+                </div>
+            </div>
+
+            {/* Create / Edit Modal */}
+            <Modal
+                show={modalOpen}
+                onClose={() => setModalOpen(false)}
+                title={editingItem ? 'Edit Category' : 'New Category'}
+                description="Categories help structure your posts and improve SEO."
+            >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <Input
+                        label="Category Name"
+                        value={form.data.name}
+                        onChange={(e) => {
+                            form.setData('name', e.target.value);
+                            if (!editingItem) {
+                                form.setData('slug', e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
+                            }
+                        }}
+                        error={form.errors.name}
+                        required
+                    />
+
+                    <Input
+                        label="Slug"
+                        value={form.data.slug}
+                        onChange={(e) => form.setData('slug', e.target.value)}
+                        error={form.errors.slug}
+                        required
+                    />
+
+                    <Textarea
+                        label="Description"
+                        rows={3}
+                        value={form.data.description}
+                        onChange={(e) => form.setData('description', e.target.value)}
+                        error={form.errors.description}
+                    />
+
+                    <div className="flex items-center gap-2 pt-2">
+                        <input
+                            type="checkbox"
+                            id="cat_is_active"
+                            checked={form.data.is_active}
+                            onChange={(e) => form.setData('is_active', e.target.checked)}
+                            className="rounded text-indigo-600 focus:ring-indigo-500 dark:bg-slate-900"
+                        />
+                        <label htmlFor="cat_is_active" className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                            Active category (visible on website)
+                        </label>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <Button variant="outline" size="sm" onClick={() => setModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" size="sm" loading={form.processing}>
+                            {editingItem ? 'Update Category' : 'Create Category'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </AuthenticatedLayout>
     );
 }

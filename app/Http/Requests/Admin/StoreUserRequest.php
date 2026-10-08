@@ -30,7 +30,7 @@ class StoreUserRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'phone_number' => ['nullable', 'string', 'max:30', 'regex:/^\\+?[0-9]{8,20}$/', 'unique:users,phone_number'],
             'gender' => ['nullable', 'string', 'in:male,female,other'],
-            'profile_photo' => ['nullable', 'image', 'max:2048'],
+            'profile_photo' => ['nullable', 'image', 'max:500'],
             'role' => ['required', 'string', Rule::in($this->availableRoles())],
             'is_active' => ['required', 'boolean'],
             'password' => ['required', 'confirmed', Password::defaults()],

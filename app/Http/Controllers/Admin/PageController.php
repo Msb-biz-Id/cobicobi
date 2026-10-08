@@ -119,6 +119,41 @@ class PageController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Pages/Edit', [
+            'page' => null,
+        ]);
+    }
+
+    public function edit(Page $page): Response
+    {
+        $page->load([
+            'revisions' => fn ($q) => $q->latest('version')->limit(15),
+        ]);
+
+        return Inertia::render('Pages/Edit', [
+            'page' => [
+                'id' => $page->id,
+                'title' => $page->title,
+                'slug' => $page->slug,
+                'content' => $page->content,
+                'thumbnail_url' => $page->thumbnail_url,
+                'meta_description' => $page->meta_description,
+                'meta_keywords' => $page->meta_keywords,
+                'status' => $page->status,
+                'views_count' => $page->views_count,
+                'created_at' => $page->created_at?->format('Y-m-d H:i'),
+                'revisions' => $page->revisions->map(fn ($r): array => [
+                    'id' => $r->id,
+                    'version' => $r->version,
+                    'note' => $r->note,
+                    'created_at' => $r->created_at?->format('Y-m-d H:i'),
+                ])->values()->all(),
+            ],
+        ]);
+    }
+
     public function store(StorePageRequest $request): RedirectResponse
     {
         $validated = $request->validated();
@@ -126,6 +161,10 @@ class PageController extends Controller
 
         if ($request->hasFile('thumbnail')) {
             $validated['thumbnail_path'] = $request->file('thumbnail')->store('page-thumbnails', 'public');
+        } elseif ($request->filled('thumbnail_url')) {
+            $validated['thumbnail_path'] = ltrim(str_replace('/storage/', '', (string) parse_url((string) $request->input('thumbnail_url'), PHP_URL_PATH)), '/');
+        } elseif (is_string($request->input('thumbnail')) && filled($request->input('thumbnail'))) {
+            $validated['thumbnail_path'] = ltrim(str_replace('/storage/', '', (string) parse_url((string) $request->input('thumbnail'), PHP_URL_PATH)), '/');
         }
 
         $validated['status'] = ContentWorkflow::STATUS_DRAFT;
@@ -137,12 +176,17 @@ class PageController extends Controller
         $validated['approved_by'] = null;
         $validated['is_active'] = false;
 
-        unset($validated['thumbnail']);
+        unset($validated['thumbnail'], $validated['thumbnail_url']);
+
+        if (isset($validated['content'])) {
+            $validated['content'] = \App\Services\HtmlSanitizer::clean($validated['content']);
+        }
+
         $page = Page::create($validated);
         $page->refresh();
         $this->createRevision($page, $request->user()->id, 'Versi awal');
 
-        return back()->with('success', 'Laman berhasil ditambahkan.');
+        return redirect()->route('pages.edit', $page->id)->with('success', 'Laman berhasil ditambahkan.');
     }
 
     public function update(UpdatePageRequest $request, Page $page): RedirectResponse
@@ -156,9 +200,18 @@ class PageController extends Controller
         if ($request->hasFile('thumbnail')) {
             // Keep previous file so older revisions can still reference it.
             $validated['thumbnail_path'] = $request->file('thumbnail')->store('page-thumbnails', 'public');
+        } elseif ($request->filled('thumbnail_url')) {
+            $validated['thumbnail_path'] = ltrim(str_replace('/storage/', '', (string) parse_url((string) $request->input('thumbnail_url'), PHP_URL_PATH)), '/');
+        } elseif (is_string($request->input('thumbnail')) && filled($request->input('thumbnail'))) {
+            $validated['thumbnail_path'] = ltrim(str_replace('/storage/', '', (string) parse_url((string) $request->input('thumbnail'), PHP_URL_PATH)), '/');
         }
 
-        unset($validated['thumbnail']);
+        unset($validated['thumbnail'], $validated['thumbnail_url']);
+
+        if (isset($validated['content'])) {
+            $validated['content'] = \App\Services\HtmlSanitizer::clean($validated['content']);
+        }
+
         $page->update($validated);
         $page->refresh();
         $this->createRevision($page, $request->user()->id, 'Konten diperbarui');
@@ -335,7 +388,7 @@ class PageController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         $request->validate([
-            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:5120'],
+            'image' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,gif,svg', 'max:500'],
         ]);
 
         $path = $request->file('image')->store('page-content', 'public');

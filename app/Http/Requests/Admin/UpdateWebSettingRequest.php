@@ -29,10 +29,10 @@ class UpdateWebSettingRequest extends FormRequest
             'meta_description' => ['nullable', 'string', 'max:1000'],
             'meta_keywords' => ['nullable', 'string', 'max:1000'],
 
-            'meta_thumbnail' => ['nullable', 'image', 'max:3072'],
-            'logo' => ['nullable', 'image', 'max:3072'],
-            'icon' => ['nullable', 'image', 'max:2048'],
-            'favicon' => ['nullable', 'file', 'mimes:ico,png,svg,webp', 'max:1024'],
+            'meta_thumbnail' => ['nullable'],
+            'logo' => ['nullable'],
+            'icon' => ['nullable'],
+            'favicon' => ['nullable'],
 
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:30'],

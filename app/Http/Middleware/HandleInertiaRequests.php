@@ -42,7 +42,12 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
             ],
             'webSetting' => fn () => $this->sharedWebSetting(),
+            'navigationMenus' => fn () => $this->sharedNavigationMenus(),
             'headerNotifications' => fn () => $this->sharedHeaderNotifications($request),
+            'turnstile' => [
+                'enabled' => (bool) config('services.turnstile.enabled', false),
+                'site_key' => config('services.turnstile.site_key', ''),
+            ],
         ];
     }
 
@@ -123,5 +128,38 @@ class HandleInertiaRequests extends Middleware
             'total' => $total,
             'items' => $items,
         ];
+    }
+
+    private function sharedNavigationMenus(): array
+    {
+        if (!Schema::hasTable('menus')) {
+            return [];
+        }
+
+        $rootMenus = \App\Models\Menu::query()
+            ->where('is_active', true)
+            ->whereNull('parent_id')
+            ->orderBy('position')
+            ->get();
+
+        if ($rootMenus->isEmpty()) {
+            return [];
+        }
+
+        return $rootMenus->map(function (\App\Models\Menu $menu): array {
+            return [
+                'id' => $menu->id,
+                'title' => $menu->title,
+                'url' => $menu->url,
+                'type' => $menu->type ?? 'standard',
+                'mega_columns' => $menu->mega_columns ?? 3,
+                'target' => $menu->target ?? '_self',
+                'icon' => $menu->icon,
+                'description' => $menu->description,
+                'badge' => $menu->badge,
+                'auto_source' => $menu->auto_source,
+                'children' => $menu->getResolvedChildren(),
+            ];
+        })->values()->all();
     }
 }

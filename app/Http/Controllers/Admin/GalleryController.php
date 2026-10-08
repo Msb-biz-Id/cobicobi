@@ -7,9 +7,9 @@ use App\Http\Requests\Admin\StoreGalleryRequest;
 use App\Http\Requests\Admin\UpdateGalleryRequest;
 use App\Models\Gallery;
 use App\Models\GalleryImage;
-use App\Services\ImageUploadService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,123 +18,198 @@ class GalleryController extends Controller
 {
     public function index(Request $request): Response
     {
-        $search = (string) $request->query('search', '');
-        $status = (string) $request->query('status', '');
+        $query = Gallery::query()
+            ->withCount('images')
+            ->latest('event_date')
+            ->latest('id');
 
-        if (!in_array($status, ['active', 'inactive'], true)) {
-            $status = '';
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('photographer', 'like', "%{$search}%");
+            });
         }
 
-        $galleries = Gallery::query()
-            ->with('author:id,name')
-            ->withCount('images')
-            ->when($search !== '', function ($query) use ($search): void {
-                $query->where(function ($innerQuery) use ($search): void {
-                    $innerQuery
-                        ->where('title', 'like', "%{$search}%")
-                        ->orWhere('slug', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%");
-                });
-            })
-            ->when($status !== '', function ($query) use ($status): void {
-                $query->where('is_active', $status === 'active');
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString()
-            ->through(fn (Gallery $gallery): array => [
-                'id' => $gallery->id,
-                'title' => $gallery->title,
-                'slug' => $gallery->slug,
-                'description' => $gallery->description,
-                'cover_image_url' => $gallery->cover_image_url,
-                'is_active' => $gallery->is_active,
-                'images_count' => (int) $gallery->images_count,
-                'author' => [
-                    'id' => $gallery->author?->id,
-                    'name' => $gallery->author?->name ?? '-',
-                ],
-                'created_at' => $gallery->created_at?->format('Y-m-d H:i'),
-            ]);
+        if ($request->filled('category')) {
+            $query->where('category', $request->input('category'));
+        }
 
-        return Inertia::render('Galleries/Index', [
+        $galleries = $query->paginate(12)->withQueryString();
+
+        $categories = Gallery::query()
+            ->distinct()
+            ->whereNotNull('category')
+            ->pluck('category')
+            ->values();
+
+        return Inertia::render('Admin/Galleries/Index', [
             'galleries' => $galleries,
-            'filters' => [
-                'search' => $search,
-                'status' => $status,
-            ],
-            'stats' => [
-                'total' => Gallery::count(),
-                'active' => Gallery::where('is_active', true)->count(),
-                'inactive' => Gallery::where('is_active', false)->count(),
-                'images' => GalleryImage::count(),
-            ],
+            'filters' => $request->only(['search', 'category']),
+            'categories' => $categories,
         ]);
     }
 
-    public function store(StoreGalleryRequest $request, ImageUploadService $imageService): RedirectResponse
+    public function create(): Response
     {
-        $validated = $request->validated();
-        $validated['user_id'] = $request->user()->id;
-
-        if ($request->hasFile('cover_image')) {
-            $validated['cover_image_path'] = $imageService->storeOptimized(
-                $request->file('cover_image'),
-                'gallery-covers',
-                (bool) ($validated['use_watermark'] ?? false),
-            );
-        }
-
-        unset($validated['cover_image'], $validated['use_watermark']);
-        Gallery::create($validated);
-
-        return back()->with('success', 'Gallery berhasil ditambahkan.');
+        return Inertia::render('Admin/Galleries/Form', [
+            'isEditing' => false,
+            'gallery' => null,
+            'categories' => ['Dies Natalis', 'Wisuda', 'Akademik & Perkuliahan', 'Laboratorium & Riset', 'Kegiatan Mahasiswa', 'Fasilitas Kampus', 'Prestasi', 'Umum'],
+        ]);
     }
 
-    public function update(
-        UpdateGalleryRequest $request,
-        Gallery $gallery,
-        ImageUploadService $imageService
-    ): RedirectResponse {
+    public function store(StoreGalleryRequest $request): RedirectResponse
+    {
         $validated = $request->validated();
 
-        if ($request->hasFile('cover_image')) {
-            if ($gallery->cover_image_path && Storage::disk('public')->exists($gallery->cover_image_path)) {
-                Storage::disk('public')->delete($gallery->cover_image_path);
+        DB::transaction(function () use ($request, $validated) {
+            $coverUrl = null;
+            if ($request->hasFile('cover_image')) {
+                $path = $request->file('cover_image')->store('galleries/covers', 'public');
+                $coverUrl = Storage::url($path);
             }
 
-            $validated['cover_image_path'] = $imageService->storeOptimized(
-                $request->file('cover_image'),
-                'gallery-covers',
-                (bool) ($validated['use_watermark'] ?? false),
-            );
-        }
+            $gallery = Gallery::create([
+                'title' => $validated['title'],
+                'category' => $validated['category'],
+                'description' => $validated['description'] ?? null,
+                'event_date' => $validated['event_date'] ?? null,
+                'photographer' => $validated['photographer'] ?? null,
+                'is_published' => $validated['is_published'] ?? true,
+                'cover_image' => $coverUrl,
+            ]);
 
-        if ($gallery->user_id === null) {
-            $validated['user_id'] = $request->user()->id;
-        }
+            // Simpan multi-foto jika ada
+            if ($request->hasFile('images')) {
+                $images = $request->file('images');
+                $captions = $validated['captions'] ?? [];
 
-        unset($validated['cover_image'], $validated['use_watermark']);
-        $gallery->update($validated);
+                foreach ($images as $index => $imageFile) {
+                    $path = $imageFile->store("galleries/{$gallery->id}", 'public');
+                    GalleryImage::create([
+                        'gallery_id' => $gallery->id,
+                        'image_url' => Storage::url($path),
+                        'caption' => $captions[$index] ?? null,
+                        'alt_text' => $validated['title'] . ' - Foto ' . ($index + 1),
+                        'position' => $index,
+                    ]);
+                }
 
-        return back()->with('success', 'Gallery berhasil diperbarui.');
+                // Jika cover_image kosong, set gambar pertama sebagai cover
+                if (!$coverUrl && count($images) > 0) {
+                    $firstImage = $gallery->images()->first();
+                    if ($firstImage) {
+                        $gallery->update(['cover_image' => $firstImage->image_url]);
+                    }
+                }
+            }
+        });
+
+        return redirect()->route('galleries.index')->with('success', 'Album galeri berhasil dibuat.');
+    }
+
+    public function edit(Gallery $gallery): Response
+    {
+        $gallery->load('images');
+
+        return Inertia::render('Admin/Galleries/Form', [
+            'isEditing' => true,
+            'gallery' => $gallery,
+            'categories' => ['Dies Natalis', 'Wisuda', 'Akademik & Perkuliahan', 'Laboratorium & Riset', 'Kegiatan Mahasiswa', 'Fasilitas Kampus', 'Prestasi', 'Umum'],
+        ]);
+    }
+
+    public function update(UpdateGalleryRequest $request, Gallery $gallery): RedirectResponse
+    {
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($request, $validated, $gallery) {
+            $updateData = [
+                'title' => $validated['title'],
+                'category' => $validated['category'],
+                'description' => $validated['description'] ?? null,
+                'event_date' => $validated['event_date'] ?? null,
+                'photographer' => $validated['photographer'] ?? null,
+                'is_published' => $validated['is_published'] ?? true,
+            ];
+
+            if ($request->hasFile('cover_image')) {
+                $path = $request->file('cover_image')->store('galleries/covers', 'public');
+                $updateData['cover_image'] = Storage::url($path);
+            }
+
+            $gallery->update($updateData);
+
+            // 1. Hapus gambar yang ditandai untuk dihapus
+            if (!empty($validated['delete_image_ids'])) {
+                $imagesToDelete = GalleryImage::where('gallery_id', $gallery->id)
+                    ->whereIn('id', $validated['delete_image_ids'])
+                    ->get();
+
+                foreach ($imagesToDelete as $img) {
+                    $relativePath = str_replace('/storage/', '', $img->image_url);
+                    Storage::disk('public')->delete($relativePath);
+                    $img->delete();
+                }
+            }
+
+            // 2. Perbarui caption gambar yang sudah ada
+            if (!empty($validated['existing_captions'])) {
+                foreach ($validated['existing_captions'] as $imgId => $caption) {
+                    GalleryImage::where('gallery_id', $gallery->id)
+                        ->where('id', $imgId)
+                        ->update(['caption' => $caption]);
+                }
+            }
+
+            // 3. Tambahkan foto-foto baru
+            if ($request->hasFile('new_images')) {
+                $maxPos = $gallery->images()->max('position') ?? -1;
+                $newImages = $request->file('new_images');
+                $newCaptions = $validated['new_captions'] ?? [];
+
+                foreach ($newImages as $index => $imgFile) {
+                    $path = $imgFile->store("galleries/{$gallery->id}", 'public');
+                    GalleryImage::create([
+                        'gallery_id' => $gallery->id,
+                        'image_url' => Storage::url($path),
+                        'caption' => $newCaptions[$index] ?? null,
+                        'alt_text' => $gallery->title . ' - Foto',
+                        'position' => $maxPos + 1 + $index,
+                    ]);
+                }
+            }
+
+            // Jika cover masih kosong dan ada foto, gunakan foto pertama
+            if (empty($gallery->cover_image)) {
+                $firstImage = $gallery->images()->first();
+                if ($firstImage) {
+                    $gallery->update(['cover_image' => $firstImage->image_url]);
+                }
+            }
+        });
+
+        return redirect()->route('galleries.index')->with('success', 'Album galeri berhasil diperbarui.');
     }
 
     public function destroy(Gallery $gallery): RedirectResponse
     {
-        if ($gallery->cover_image_path && Storage::disk('public')->exists($gallery->cover_image_path)) {
-            Storage::disk('public')->delete($gallery->cover_image_path);
+        $gallery->load('images');
+
+        foreach ($gallery->images as $img) {
+            $relativePath = str_replace('/storage/', '', $img->image_url);
+            Storage::disk('public')->delete($relativePath);
         }
 
-        $imagePaths = $gallery->images()->pluck('image_path')->filter()->values()->all();
-        foreach ($imagePaths as $path) {
-            if (Storage::disk('public')->exists($path)) {
-                Storage::disk('public')->delete($path);
-            }
+        if ($gallery->cover_image) {
+            $relativePath = str_replace('/storage/', '', $gallery->cover_image);
+            Storage::disk('public')->delete($relativePath);
         }
 
         $gallery->delete();
 
-        return back()->with('success', 'Gallery berhasil dihapus.');
+        return redirect()->route('galleries.index')->with('success', 'Album galeri dan seluruh foto berhasil dihapus.');
     }
 }

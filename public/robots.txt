@@ -1,2 +1,9 @@
 User-agent: *
-Disallow:
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /login
+Disallow: /register
+Disallow: /password/
+Disallow: /profil/biodata
+
+Sitemap: /sitemap.xml

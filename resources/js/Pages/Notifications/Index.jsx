@@ -1,16 +1,28 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { useState } from 'react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import PageHeader from '@/Components/UI/PageHeader';
+import StatCard from '@/Components/UI/StatCard';
+import Button from '@/Components/UI/Button';
+import Input from '@/Components/UI/Input';
+import Textarea from '@/Components/UI/Textarea';
+import Select from '@/Components/UI/Select';
+import Badge from '@/Components/UI/Badge';
+import EmptyState from '@/Components/UI/EmptyState';
+import Pagination from '@/Components/UI/Pagination';
+import Modal from '@/Components/UI/Modal';
 import {
     Bell,
     CheckCircle2,
-    Pencil,
+    ShieldAlert,
+    XCircle,
     Plus,
     Search,
-    ShieldAlert,
+    Edit3,
     Trash2,
-    XCircle,
+    Send,
+    ExternalLink,
 } from 'lucide-react';
-import { useState } from 'react';
 import Swal from 'sweetalert2';
 
 const defaultData = {
@@ -25,64 +37,88 @@ const defaultData = {
 
 function toDatetimeLocal(value) {
     if (!value) return '';
-
     const normalized = String(value).replace(' ', 'T');
     return normalized.length === 16 ? normalized : normalized.slice(0, 16);
 }
 
-function ErrorText({ message }) {
-    if (!message) return null;
-    return <p className="text-xs text-rose-500">{message}</p>;
-}
-
-export default function NotificationsIndex({ notifications, filters, stats }) {
+export default function NotificationsIndex({ notifications, filters = {}, stats = {} }) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [targetRoleFilter, setTargetRoleFilter] = useState(filters.target_role ?? '');
     const [typeFilter, setTypeFilter] = useState(filters.type ?? '');
     const [statusFilter, setStatusFilter] = useState(filters.status ?? '');
+    const [modalOpen, setModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
 
     const form = useForm(defaultData);
 
-    const submit = (event) => {
-        event.preventDefault();
+    const openCreate = () => {
+        setEditingItem(null);
+        form.setData(defaultData);
+        form.clearErrors();
+        setModalOpen(true);
+    };
+
+    const openEdit = (item) => {
+        setEditingItem(item);
+        form.setData({
+            title: item.title,
+            message: item.message,
+            type: item.type,
+            target_role: item.target_role,
+            link_url: item.link_url ?? '',
+            published_at: toDatetimeLocal(item.published_at),
+            is_active: item.is_active,
+        });
+        form.clearErrors();
+        setModalOpen(true);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
 
         if (editingItem) {
-            form.transform((data) => ({ ...data, _method: 'put' })).post(
-                route('notifications.update', editingItem.id),
-                {
-                    preserveScroll: true,
-                    onSuccess: () => {
-                        form.reset();
-                        form.setData('type', 'info');
-                        form.setData('target_role', 'all');
-                        form.setData('is_active', true);
-                        setEditingItem(null);
-                    },
+            form.put(route('notifications.update', editingItem.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setModalOpen(false);
+                    form.reset();
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Notifikasi berhasil diperbarui',
+                        showConfirmButton: false,
+                        timer: 2000,
+                    });
                 },
-            );
+            });
             return;
         }
 
         form.post(route('notifications.store'), {
             preserveScroll: true,
             onSuccess: () => {
+                setModalOpen(false);
                 form.reset();
-                form.setData('type', 'info');
-                form.setData('target_role', 'all');
-                form.setData('is_active', true);
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Notifikasi baru berhasil dikirim',
+                    showConfirmButton: false,
+                    timer: 2000,
+                });
             },
         });
     };
 
-    const applyFilter = (event) => {
-        event.preventDefault();
+    const applyFilter = (e) => {
+        if (e) e.preventDefault();
         const params = {};
-
-        if (search.trim() !== '') params.search = search.trim();
-        if (targetRoleFilter !== '') params.target_role = targetRoleFilter;
-        if (typeFilter !== '') params.type = typeFilter;
-        if (statusFilter !== '') params.status = statusFilter;
+        if (search.trim()) params.search = search.trim();
+        if (targetRoleFilter) params.target_role = targetRoleFilter;
+        if (typeFilter) params.type = typeFilter;
+        if (statusFilter) params.status = statusFilter;
 
         router.get(route('notifications.index'), params, {
             preserveScroll: true,
@@ -96,7 +132,6 @@ export default function NotificationsIndex({ notifications, filters, stats }) {
         setTargetRoleFilter('');
         setTypeFilter('');
         setStatusFilter('');
-
         router.get(route('notifications.index'), {}, {
             preserveScroll: true,
             preserveState: true,
@@ -104,38 +139,15 @@ export default function NotificationsIndex({ notifications, filters, stats }) {
         });
     };
 
-    const editItem = (item) => {
-        setEditingItem(item);
-        form.setData({
-            title: item.title,
-            message: item.message,
-            type: item.type,
-            target_role: item.target_role,
-            link_url: item.link_url ?? '',
-            published_at: toDatetimeLocal(item.published_at),
-            is_active: item.is_active,
-        });
-        form.clearErrors();
-    };
-
-    const cancelEdit = () => {
-        setEditingItem(null);
-        form.reset();
-        form.setData('type', 'info');
-        form.setData('target_role', 'all');
-        form.setData('is_active', true);
-        form.clearErrors();
-    };
-
-    const deleteItem = async (item) => {
+    const handleDelete = async (item) => {
         const result = await Swal.fire({
-            title: 'Hapus notifikasi?',
+            title: 'Hapus Notifikasi?',
             text: `Notifikasi "${item.title}" akan dihapus permanen.`,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Ya, hapus',
+            confirmButtonText: 'Ya, Hapus',
             cancelButtonText: 'Batal',
-            confirmButtonColor: '#ef4444',
+            confirmButtonColor: '#e11d48',
         });
 
         if (!result.isConfirmed) return;
@@ -143,382 +155,203 @@ export default function NotificationsIndex({ notifications, filters, stats }) {
         router.delete(route('notifications.destroy', item.id), { preserveScroll: true });
     };
 
-    const statCards = [
-        { label: 'Total Notif', value: stats.total, icon: Bell, color: 'text-primary' },
-        {
-            label: 'Active',
-            value: stats.active,
-            icon: CheckCircle2,
-            color: 'text-emerald-500',
-        },
-        {
-            label: 'Inactive',
-            value: stats.inactive,
-            icon: XCircle,
-            color: 'text-rose-500',
-        },
-        {
-            label: 'Target Superadmin',
-            value: stats.superadmin_targeted,
-            icon: ShieldAlert,
-            color: 'text-amber-500',
-        },
-    ];
+    const typeBadgeVariant = (type) => {
+        switch (type) {
+            case 'success':
+                return 'success';
+            case 'warning':
+                return 'warning';
+            case 'danger':
+                return 'danger';
+            default:
+                return 'indigo';
+        }
+    };
 
     return (
         <AuthenticatedLayout>
-            <Head title="Kelola Notif" />
+            <Head title="System Notifications" />
 
-            <section className="space-y-6">
-                <header>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        Kelola Notif
-                    </h1>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Superadmin dapat membuat notifikasi laman untuk role tertentu,
-                        termasuk notifikasi khusus superadmin.
-                    </p>
-                </header>
+            <div className="space-y-6">
+                <PageHeader
+                    title="System Notifications"
+                    subtitle="Broadcast announcements, operational alerts and system messages across user roles"
+                    actions={
+                        <Button size="sm" variant="primary" icon={Plus} onClick={openCreate}>
+                            New Notification
+                        </Button>
+                    }
+                />
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {statCards.map((card) => {
-                        const Icon = card.icon;
-                        return (
-                            <article key={card.label} className="surface-card p-5">
-                                <div className="mb-4 flex items-center justify-between">
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                        {card.label}
-                                    </p>
-                                    <Icon className={`h-5 w-5 ${card.color}`} />
-                                </div>
-                                <p className="text-3xl font-bold text-slate-900 dark:text-white">
-                                    {card.value.toLocaleString()}
-                                </p>
-                            </article>
-                        );
-                    })}
+                {/* Stat Cards */}
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <StatCard
+                        icon={Bell}
+                        label="Total Broadcasts"
+                        value={stats.total?.toLocaleString() ?? 0}
+                    />
+                    <StatCard
+                        icon={CheckCircle2}
+                        label="Active Alerts"
+                        value={stats.active?.toLocaleString() ?? 0}
+                    />
+                    <StatCard
+                        icon={XCircle}
+                        label="Inactive / Expired"
+                        value={stats.inactive?.toLocaleString() ?? 0}
+                    />
+                    <StatCard
+                        icon={ShieldAlert}
+                        label="Superadmin Targeted"
+                        value={stats.superadmin_targeted?.toLocaleString() ?? 0}
+                    />
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <section className="surface-card p-5 xl:col-span-1">
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                            {editingItem ? 'Edit Notifikasi' : 'Tambah Notifikasi'}
-                        </h2>
-                        <form onSubmit={submit} className="mt-4 space-y-3">
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                    Judul
-                                </label>
+                {/* Table Container */}
+                <div className="surface-card overflow-hidden">
+                    {/* Filters Bar */}
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40">
+                        <form onSubmit={applyFilter} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                            <div className="relative lg:col-span-2">
+                                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="Judul notifikasi"
-                                    value={form.data.title}
-                                    onChange={(event) => form.setData('title', event.target.value)}
-                                    className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
+                                    placeholder="Search title, message, url..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                                 />
-                                <ErrorText message={form.errors.title} />
                             </div>
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                    Pesan
-                                </label>
-                                <textarea
-                                    rows={4}
-                                    placeholder="Isi notifikasi"
-                                    value={form.data.message}
-                                    onChange={(event) => form.setData('message', event.target.value)}
-                                    className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                />
-                                <ErrorText message={form.errors.message} />
-                            </div>
+                            <select
+                                value={targetRoleFilter}
+                                onChange={(e) => setTargetRoleFilter(e.target.value)}
+                                className="rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                            >
+                                <option value="">All Target Roles</option>
+                                <option value="all">Everyone (All)</option>
+                                <option value="superadmin">Superadmin</option>
+                                <option value="admin">Admin</option>
+                                <option value="editor">Editor</option>
+                                <option value="author">Author</option>
+                                <option value="viewer">Viewer</option>
+                            </select>
 
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                        Tipe
-                                    </label>
-                                    <select
-                                        value={form.data.type}
-                                        onChange={(event) => form.setData('type', event.target.value)}
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    >
-                                        <option value="info">Info</option>
-                                        <option value="success">Success</option>
-                                        <option value="warning">Warning</option>
-                                        <option value="danger">Danger</option>
-                                    </select>
-                                    <ErrorText message={form.errors.type} />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                        Target Role
-                                    </label>
-                                    <select
-                                        value={form.data.target_role}
-                                        onChange={(event) =>
-                                            form.setData('target_role', event.target.value)
-                                        }
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    >
-                                        <option value="all">Semua Role</option>
-                                        <option value="superadmin">Superadmin</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="editor">Editor</option>
-                                        <option value="author">Author</option>
-                                        <option value="viewer">Viewer</option>
-                                    </select>
-                                    <ErrorText message={form.errors.target_role} />
-                                </div>
-                            </div>
+                            <select
+                                value={typeFilter}
+                                onChange={(e) => setTypeFilter(e.target.value)}
+                                className="rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                            >
+                                <option value="">All Alert Types</option>
+                                <option value="info">Info</option>
+                                <option value="success">Success</option>
+                                <option value="warning">Warning</option>
+                                <option value="danger">Danger</option>
+                            </select>
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                    Link Tujuan (opsional)
-                                </label>
-                                <input
-                                    type="url"
-                                    placeholder="https://..."
-                                    value={form.data.link_url}
-                                    onChange={(event) => form.setData('link_url', event.target.value)}
-                                    className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                />
-                                <ErrorText message={form.errors.link_url} />
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                        Jadwal Tayang (opsional)
-                                    </label>
-                                    <input
-                                        type="datetime-local"
-                                        value={form.data.published_at}
-                                        onChange={(event) =>
-                                            form.setData('published_at', event.target.value)
-                                        }
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    />
-                                    <ErrorText message={form.errors.published_at} />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                        Status
-                                    </label>
-                                    <select
-                                        value={form.data.is_active ? '1' : '0'}
-                                        onChange={(event) =>
-                                            form.setData('is_active', event.target.value === '1')
-                                        }
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    >
-                                        <option value="1">Active</option>
-                                        <option value="0">Inactive</option>
-                                    </select>
-                                    <ErrorText message={form.errors.is_active} />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-2">
-                                {editingItem && (
+                            <div className="flex items-center gap-2">
+                                <Button type="submit" size="sm" variant="secondary" className="w-full">
+                                    Filter
+                                </Button>
+                                {(search || targetRoleFilter || typeFilter || statusFilter) && (
                                     <button
                                         type="button"
-                                        onClick={cancelEdit}
-                                        className="rounded-[0.625rem] border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800"
+                                        onClick={resetFilter}
+                                        className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
                                     >
-                                        Batal
+                                        Reset
                                     </button>
                                 )}
-                                <button
-                                    type="submit"
-                                    className="inline-flex items-center gap-2 rounded-[0.625rem] bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-                                >
-                                    <Plus className="h-4 w-4" />
-                                    {editingItem ? 'Perbarui' : 'Simpan'}
-                                </button>
                             </div>
                         </form>
-                    </section>
+                    </div>
 
-                    <section className="surface-card overflow-hidden xl:col-span-2">
-                        <form
-                            onSubmit={applyFilter}
-                            className="border-b border-slate-200 p-4 dark:border-border-dark"
-                        >
-                            <div className="grid grid-cols-1 gap-3 xl:grid-cols-4">
-                                <div className="space-y-1 xl:col-span-2">
-                                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                        Cari Judul / Pesan / Link
-                                    </label>
-                                    <div className="relative">
-                                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                        <input
-                                            type="text"
-                                            value={search}
-                                            onChange={(event) => setSearch(event.target.value)}
-                                            placeholder="Cari notifikasi..."
-                                            className="w-full rounded-[0.625rem] border-slate-300 bg-white pl-9 text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                        Role
-                                    </label>
-                                    <select
-                                        value={targetRoleFilter}
-                                        onChange={(event) => setTargetRoleFilter(event.target.value)}
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    >
-                                        <option value="">Semua Role</option>
-                                        <option value="all">Semua</option>
-                                        <option value="superadmin">Superadmin</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="editor">Editor</option>
-                                        <option value="author">Author</option>
-                                        <option value="viewer">Viewer</option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                        Tipe
-                                    </label>
-                                    <select
-                                        value={typeFilter}
-                                        onChange={(event) => setTypeFilter(event.target.value)}
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    >
-                                        <option value="">Semua Tipe</option>
-                                        <option value="info">Info</option>
-                                        <option value="success">Success</option>
-                                        <option value="warning">Warning</option>
-                                        <option value="danger">Danger</option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                        Status
-                                    </label>
-                                    <select
-                                        value={statusFilter}
-                                        onChange={(event) => setStatusFilter(event.target.value)}
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    >
-                                        <option value="">Semua Status</option>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="mt-3 flex justify-end gap-2">
-                                <button
-                                    type="submit"
-                                    className="rounded-[0.625rem] bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
-                                >
-                                    Terapkan Filter
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={resetFilter}
-                                    className="rounded-[0.625rem] border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800"
-                                >
-                                    Reset
-                                </button>
-                            </div>
-                        </form>
-
+                    {/* Table */}
+                    {notifications?.data?.length === 0 ? (
+                        <div className="p-8">
+                            <EmptyState
+                                icon={Bell}
+                                title="No notifications found"
+                                description="Create an announcement or alert to inform administrators."
+                                actionLabel="Create Alert"
+                                onAction={openCreate}
+                                actionIcon={Plus}
+                            />
+                        </div>
+                    ) : (
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200 dark:divide-border-dark">
-                                <thead className="bg-slate-50 dark:bg-slate-900/20">
+                            <table className="w-full text-left text-xs">
+                                <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                            Notifikasi
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                            Target / Tipe
-                                        </th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                            Jadwal
-                                        </th>
-                                        <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                            Aksi
-                                        </th>
+                                        <th className="py-3.5 pl-5 pr-3">Notification Alert</th>
+                                        <th className="py-3.5 px-3">Type</th>
+                                        <th className="py-3.5 px-3">Target Role</th>
+                                        <th className="py-3.5 px-3">Created By</th>
+                                        <th className="py-3.5 px-3">Status</th>
+                                        <th className="py-3.5 pl-3 pr-5 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                                     {notifications.data.map((item) => (
                                         <tr
                                             key={item.id}
-                                            className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30"
+                                            className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors"
                                         >
-                                            <td className="px-4 py-3">
-                                                <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                            <td className="py-3.5 pl-5 pr-3 max-w-sm">
+                                                <p className="text-xs font-bold text-slate-900 dark:text-white">
                                                     {item.title}
                                                 </p>
-                                                <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                                                <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
                                                     {item.message}
                                                 </p>
                                                 {item.link_url && (
-                                                    <p className="mt-1 truncate text-xs text-primary">
+                                                    <a
+                                                        href={item.link_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="mt-1 inline-flex items-center gap-1 font-mono text-[11px] text-indigo-600 hover:underline dark:text-indigo-400"
+                                                    >
+                                                        <ExternalLink className="h-3 w-3" />
                                                         {item.link_url}
-                                                    </p>
+                                                    </a>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <p className="text-sm text-slate-700 dark:text-slate-200">
-                                                    {item.target_role}
-                                                </p>
-                                                <p
-                                                    className={`mt-1 inline-flex rounded-md px-2 py-1 text-xs font-semibold ${
-                                                        item.type === 'success'
-                                                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
-                                                            : item.type === 'warning'
-                                                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
-                                                              : item.type === 'danger'
-                                                                ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300'
-                                                                : 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300'
-                                                    }`}
-                                                >
+
+                                            <td className="py-3.5 px-3">
+                                                <Badge variant={typeBadgeVariant(item.type)} size="sm">
                                                     {item.type}
-                                                </p>
-                                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                    by {item.creator?.name || '-'}
-                                                </p>
+                                                </Badge>
                                             </td>
-                                            <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
-                                                <p>
-                                                    Publish: {item.published_at || 'Langsung'}
-                                                </p>
-                                                <p className="mt-1">
-                                                    Status:{' '}
-                                                    <span
-                                                        className={
-                                                            item.is_active
-                                                                ? 'text-emerald-600 dark:text-emerald-300'
-                                                                : 'text-rose-600 dark:text-rose-300'
-                                                        }
-                                                    >
-                                                        {item.is_active ? 'Active' : 'Inactive'}
-                                                    </span>
-                                                </p>
+
+                                            <td className="py-3.5 px-3 font-semibold text-slate-700 dark:text-slate-300 capitalize">
+                                                {item.target_role}
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-end gap-1">
+
+                                            <td className="py-3.5 px-3 text-slate-500 dark:text-slate-400">
+                                                {item.creator?.name || 'System'}
+                                            </td>
+
+                                            <td className="py-3.5 px-3">
+                                                <Badge variant={item.is_active ? 'success' : 'neutral'} size="sm">
+                                                    {item.is_active ? 'Active' : 'Inactive'}
+                                                </Badge>
+                                            </td>
+
+                                            <td className="py-3.5 pl-3 pr-5 text-right">
+                                                <div className="flex items-center justify-end gap-1">
                                                     <button
                                                         type="button"
-                                                        onClick={() => editItem(item)}
-                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800"
+                                                        onClick={() => openEdit(item)}
+                                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition"
+                                                        title="Edit notification"
                                                     >
-                                                        <Pencil className="h-4 w-4" />
+                                                        <Edit3 className="h-4 w-4" />
                                                     </button>
                                                     <button
                                                         type="button"
-                                                        onClick={() => deleteItem(item)}
-                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-rose-200 text-rose-500 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                                                        onClick={() => handleDelete(item)}
+                                                        className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition"
+                                                        title="Delete notification"
                                                     >
                                                         <Trash2 className="h-4 w-4" />
                                                     </button>
@@ -526,39 +359,114 @@ export default function NotificationsIndex({ notifications, filters, stats }) {
                                             </td>
                                         </tr>
                                     ))}
-                                    {notifications.data.length === 0 && (
-                                        <tr>
-                                            <td
-                                                colSpan={4}
-                                                className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400"
-                                            >
-                                                Belum ada notifikasi.
-                                            </td>
-                                        </tr>
-                                    )}
                                 </tbody>
                             </table>
                         </div>
+                    )}
 
-                        <div className="flex flex-wrap justify-end gap-1 border-t border-slate-200 px-4 py-3 dark:border-border-dark">
-                            {notifications.links.map((link, idx) => (
-                                <Link
-                                    key={`${idx}-${link.label}`}
-                                    href={link.url || '#'}
-                                    preserveScroll
-                                    preserveState
-                                    className={`rounded-md border px-3 py-1.5 text-sm ${
-                                        link.active
-                                            ? 'border-primary bg-primary text-white'
-                                            : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800'
-                                    } ${!link.url ? 'pointer-events-none opacity-40' : ''}`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ))}
-                        </div>
-                    </section>
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
+                        <Pagination links={notifications?.links} meta={notifications} />
+                    </div>
                 </div>
-            </section>
+            </div>
+
+            {/* Create / Edit Modal */}
+            <Modal
+                show={modalOpen}
+                onClose={() => setModalOpen(false)}
+                title={editingItem ? 'Edit Notification' : 'Create Broadcast Notification'}
+                description="Send system announcement or urgent alert to dashboard users"
+            >
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <Input
+                        label="Notification Title"
+                        placeholder="e.g. Scheduled System Maintenance"
+                        value={form.data.title}
+                        onChange={(e) => form.setData('title', e.target.value)}
+                        error={form.errors.title}
+                        required
+                    />
+
+                    <Textarea
+                        label="Message"
+                        placeholder="Write the notification details here..."
+                        rows={3}
+                        value={form.data.message}
+                        onChange={(e) => form.setData('message', e.target.value)}
+                        error={form.errors.message}
+                        required
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Select
+                            label="Alert Type"
+                            value={form.data.type}
+                            onChange={(e) => form.setData('type', e.target.value)}
+                            options={[
+                                { value: 'info', label: 'Info (Blue)' },
+                                { value: 'success', label: 'Success (Green)' },
+                                { value: 'warning', label: 'Warning (Amber)' },
+                                { value: 'danger', label: 'Danger (Red)' },
+                            ]}
+                        />
+
+                        <Select
+                            label="Target Audience"
+                            value={form.data.target_role}
+                            onChange={(e) => form.setData('target_role', e.target.value)}
+                            options={[
+                                { value: 'all', label: 'All Users (Everyone)' },
+                                { value: 'superadmin', label: 'Superadmin Only' },
+                                { value: 'admin', label: 'Admin Only' },
+                                { value: 'editor', label: 'Editor Only' },
+                                { value: 'author', label: 'Author Only' },
+                                { value: 'viewer', label: 'Viewer Only' },
+                            ]}
+                        />
+                    </div>
+
+                    <Input
+                        label="Action Link (Optional URL)"
+                        placeholder="https://..."
+                        value={form.data.link_url}
+                        onChange={(e) => form.setData('link_url', e.target.value)}
+                        error={form.errors.link_url}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input
+                            label="Schedule Publication (Optional)"
+                            type="datetime-local"
+                            value={form.data.published_at}
+                            onChange={(e) => form.setData('published_at', e.target.value)}
+                            error={form.errors.published_at}
+                        />
+
+                        <div className="flex flex-col justify-end pb-2">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={form.data.is_active}
+                                    onChange={(e) => form.setData('is_active', e.target.checked)}
+                                    className="rounded text-indigo-600 focus:ring-indigo-500 dark:bg-slate-900"
+                                />
+                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                                    Active / Visible immediately
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <Button variant="outline" size="sm" onClick={() => setModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" size="sm" icon={Send} loading={form.processing}>
+                            {editingItem ? 'Update Notification' : 'Broadcast Now'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </AuthenticatedLayout>
     );
 }

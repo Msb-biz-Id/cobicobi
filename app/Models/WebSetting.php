@@ -47,7 +47,9 @@ class WebSetting extends Model
         if (blank($this->logo_path)) {
             return null;
         }
-
+        if (str_starts_with($this->logo_path, 'http://') || str_starts_with($this->logo_path, 'https://') || str_starts_with($this->logo_path, '/storage/')) {
+            return $this->logo_path;
+        }
         return Storage::url($this->logo_path);
     }
 
@@ -56,7 +58,9 @@ class WebSetting extends Model
         if (blank($this->icon_path)) {
             return null;
         }
-
+        if (str_starts_with($this->icon_path, 'http://') || str_starts_with($this->icon_path, 'https://') || str_starts_with($this->icon_path, '/storage/')) {
+            return $this->icon_path;
+        }
         return Storage::url($this->icon_path);
     }
 
@@ -65,7 +69,9 @@ class WebSetting extends Model
         if (blank($this->favicon_path)) {
             return null;
         }
-
+        if (str_starts_with($this->favicon_path, 'http://') || str_starts_with($this->favicon_path, 'https://') || str_starts_with($this->favicon_path, '/storage/')) {
+            return $this->favicon_path;
+        }
         return Storage::url($this->favicon_path);
     }
 
@@ -74,7 +80,9 @@ class WebSetting extends Model
         if (blank($this->meta_thumbnail_path)) {
             return null;
         }
-
+        if (str_starts_with($this->meta_thumbnail_path, 'http://') || str_starts_with($this->meta_thumbnail_path, 'https://') || str_starts_with($this->meta_thumbnail_path, '/storage/')) {
+            return $this->meta_thumbnail_path;
+        }
         return Storage::url($this->meta_thumbnail_path);
     }
 }

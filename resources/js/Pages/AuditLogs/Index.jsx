@@ -1,30 +1,37 @@
+import { useState } from 'react';
+import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import PageHeader from '@/Components/UI/PageHeader';
+import StatCard from '@/Components/UI/StatCard';
+import Badge from '@/Components/UI/Badge';
+import Button from '@/Components/UI/Button';
+import EmptyState from '@/Components/UI/EmptyState';
+import Pagination from '@/Components/UI/Pagination';
 import {
     Activity,
     Calendar,
     FileClock,
     Search,
-    ShieldAlert,
+    Shield,
     Trash2,
     Wrench,
+    PlusCircle,
+    Globe,
 } from 'lucide-react';
-import { useState } from 'react';
 
-export default function AuditLogsIndex({ logs, filters, roleOptions, stats }) {
+export default function AuditLogsIndex({ logs, filters = {}, roleOptions = [], stats = {} }) {
     const [search, setSearch] = useState(filters.search ?? '');
     const [actionFilter, setActionFilter] = useState(filters.action ?? '');
     const [roleFilter, setRoleFilter] = useState(filters.role ?? '');
     const [dateFilter, setDateFilter] = useState(filters.date ?? '');
 
-    const applyFilter = (event) => {
-        event.preventDefault();
-
+    const applyFilter = (e) => {
+        if (e) e.preventDefault();
         const params = {};
-        if (search.trim() !== '') params.search = search.trim();
-        if (actionFilter !== '') params.action = actionFilter;
-        if (roleFilter !== '') params.role = roleFilter;
-        if (dateFilter !== '') params.date = dateFilter;
+        if (search.trim()) params.search = search.trim();
+        if (actionFilter) params.action = actionFilter;
+        if (roleFilter) params.role = roleFilter;
+        if (dateFilter) params.date = dateFilter;
 
         router.get(route('audit-logs.index'), params, {
             preserveScroll: true,
@@ -38,7 +45,6 @@ export default function AuditLogsIndex({ logs, filters, roleOptions, stats }) {
         setActionFilter('');
         setRoleFilter('');
         setDateFilter('');
-
         router.get(route('audit-logs.index'), {}, {
             preserveScroll: true,
             preserveState: true,
@@ -46,227 +52,200 @@ export default function AuditLogsIndex({ logs, filters, roleOptions, stats }) {
         });
     };
 
-    const statCards = [
-        { label: 'Total Log', value: stats.total, icon: FileClock, color: 'text-primary' },
-        { label: 'Hari Ini', value: stats.today, icon: Calendar, color: 'text-sky-500' },
-        { label: 'Update', value: stats.updates, icon: Wrench, color: 'text-amber-500' },
-        { label: 'Delete', value: stats.deletes, icon: Trash2, color: 'text-rose-500' },
-    ];
+    const getActionBadgeVariant = (action) => {
+        switch (action?.toLowerCase()) {
+            case 'create':
+                return 'success';
+            case 'update':
+                return 'warning';
+            case 'delete':
+                return 'danger';
+            default:
+                return 'neutral';
+        }
+    };
 
     return (
         <AuthenticatedLayout>
-            <Head title="Audit Log" />
+            <Head title="Audit Activity Logs" />
 
-            <section className="space-y-6">
-                <header>
-                    <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                        Audit Log Aktivitas Admin
-                    </h1>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Log aktivitas admin: siapa mengubah/menghapus apa, kapan, dan dari IP mana.
-                        Halaman ini khusus superadmin.
-                    </p>
-                </header>
+            <div className="space-y-6">
+                <PageHeader
+                    title="Security & Audit Logs"
+                    subtitle="Immutable chronological ledger of administrative operations, mutations and system access"
+                />
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    {statCards.map((card) => {
-                        const Icon = card.icon;
-                        return (
-                            <article key={card.label} className="surface-card p-5">
-                                <div className="mb-4 flex items-center justify-between">
-                                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                                        {card.label}
-                                    </p>
-                                    <Icon className={`h-5 w-5 ${card.color}`} />
-                                </div>
-                                <p className="text-3xl font-bold text-slate-900 dark:text-white">
-                                    {card.value.toLocaleString()}
-                                </p>
-                            </article>
-                        );
-                    })}
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    <StatCard
+                        icon={FileClock}
+                        label="Total Operations"
+                        value={stats.total?.toLocaleString() ?? 0}
+                    />
+                    <StatCard
+                        icon={Calendar}
+                        label="Recorded Today"
+                        value={stats.today?.toLocaleString() ?? 0}
+                    />
+                    <StatCard
+                        icon={Wrench}
+                        label="Data Updates"
+                        value={stats.updates?.toLocaleString() ?? 0}
+                    />
+                    <StatCard
+                        icon={Trash2}
+                        label="Deletions"
+                        value={stats.deletes?.toLocaleString() ?? 0}
+                    />
                 </div>
 
-                <section className="surface-card overflow-hidden">
-                    <form
-                        onSubmit={applyFilter}
-                        className="border-b border-slate-200 p-4 dark:border-border-dark"
-                    >
-                        <div className="grid grid-cols-1 gap-3 xl:grid-cols-5">
-                            <div className="space-y-1 xl:col-span-2">
-                                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                    Cari Actor / Route / Resource / IP
-                                </label>
-                                <div className="relative">
-                                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                                    <input
-                                        type="text"
-                                        value={search}
-                                        onChange={(event) => setSearch(event.target.value)}
-                                        placeholder="Cari log..."
-                                        className="w-full rounded-[0.625rem] border-slate-300 bg-white pl-9 text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                    />
-                                </div>
+                {/* Table Card */}
+                <div className="surface-card overflow-hidden">
+                    {/* Filters Toolbar */}
+                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40">
+                        <form onSubmit={applyFilter} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                            <div className="relative lg:col-span-2">
+                                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search actor, route, IP, resource..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 bg-white py-1.5 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                                />
                             </div>
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                    Aksi
-                                </label>
-                                <select
-                                    value={actionFilter}
-                                    onChange={(event) => setActionFilter(event.target.value)}
-                                    className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                >
-                                    <option value="">Semua Aksi</option>
-                                    <option value="create">Create</option>
-                                    <option value="update">Update</option>
-                                    <option value="delete">Delete</option>
-                                    <option value="other">Other</option>
-                                </select>
-                            </div>
+                            <select
+                                value={actionFilter}
+                                onChange={(e) => setActionFilter(e.target.value)}
+                                className="rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                            >
+                                <option value="">All Actions</option>
+                                <option value="create">Create</option>
+                                <option value="update">Update</option>
+                                <option value="delete">Delete</option>
+                                <option value="other">Other</option>
+                            </select>
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                    Role
-                                </label>
-                                <select
-                                    value={roleFilter}
-                                    onChange={(event) => setRoleFilter(event.target.value)}
-                                    className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
-                                >
-                                    <option value="">Semua Role</option>
-                                    {roleOptions.map((role) => (
-                                        <option key={role} value={role}>
-                                            {role}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                            <select
+                                value={roleFilter}
+                                onChange={(e) => setRoleFilter(e.target.value)}
+                                className="rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                            >
+                                <option value="">All Roles</option>
+                                {roleOptions.map((role) => (
+                                    <option key={role} value={role}>
+                                        {role}
+                                    </option>
+                                ))}
+                            </select>
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                    Tanggal
-                                </label>
+                            <div className="flex items-center gap-2">
                                 <input
                                     type="date"
                                     value={dateFilter}
-                                    onChange={(event) => setDateFilter(event.target.value)}
-                                    className="w-full rounded-[0.625rem] border-slate-300 bg-white text-sm shadow-sm focus:border-primary focus:ring-primary/30 dark:border-border-dark dark:bg-slate-900/30"
+                                    onChange={(e) => setDateFilter(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 bg-white py-1.5 px-3 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                                 />
-                            </div>
-                        </div>
-
-                        <div className="mt-3 flex justify-end gap-2">
-                            <button
-                                type="submit"
-                                className="rounded-[0.625rem] bg-primary px-3 py-2 text-sm font-semibold text-white hover:opacity-90"
-                            >
-                                Terapkan Filter
-                            </button>
-                            <button
-                                type="button"
-                                onClick={resetFilter}
-                                className="rounded-[0.625rem] border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-200 dark:hover:bg-slate-800"
-                            >
-                                Reset
-                            </button>
-                        </div>
-                    </form>
-
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200 dark:divide-border-dark">
-                            <thead className="bg-slate-50 dark:bg-slate-900/20">
-                                <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        Actor
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        Aktivitas
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        Resource
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        IP
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        Waktu
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-200 dark:divide-border-dark">
-                                {logs.data.map((item) => (
-                                    <tr key={item.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
-                                        <td className="px-4 py-3">
-                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                                                {item.actor?.name || '-'}
-                                            </p>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                {item.actor?.role || '-'}
-                                            </p>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <p className="inline-flex items-center gap-1 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                                <Activity className="h-4 w-4" /> {item.action}
-                                            </p>
-                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                {item.method} - {item.route_name || '-'}
-                                            </p>
-                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                {item.description || '-'}
-                                            </p>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <p className="text-sm text-slate-700 dark:text-slate-200">
-                                                {item.subject_label || '-'}
-                                            </p>
-                                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                Fields: {(item.payload_keys || []).join(', ') || '-'}
-                                            </p>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <p className="inline-flex items-center gap-1 text-sm text-slate-700 dark:text-slate-200">
-                                                <ShieldAlert className="h-4 w-4" /> {item.ip_address || '-'}
-                                            </p>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">
-                                            {item.created_at}
-                                        </td>
-                                    </tr>
-                                ))}
-                                {logs.data.length === 0 && (
-                                    <tr>
-                                        <td
-                                            colSpan={5}
-                                            className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400"
-                                        >
-                                            Belum ada data audit log.
-                                        </td>
-                                    </tr>
+                                <Button type="submit" size="sm" variant="secondary">
+                                    Filter
+                                </Button>
+                                {(search || actionFilter || roleFilter || dateFilter) && (
+                                    <button
+                                        type="button"
+                                        onClick={resetFilter}
+                                        className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
+                                    >
+                                        Reset
+                                    </button>
                                 )}
-                            </tbody>
-                        </table>
+                            </div>
+                        </form>
                     </div>
 
-                    <div className="flex flex-wrap justify-end gap-1 border-t border-slate-200 px-4 py-3 dark:border-border-dark">
-                        {logs.links.map((link, idx) => (
-                            <Link
-                                key={`${idx}-${link.label}`}
-                                href={link.url || '#'}
-                                preserveScroll
-                                preserveState
-                                className={`rounded-md border px-3 py-1.5 text-sm ${
-                                    link.active
-                                        ? 'border-primary bg-primary text-white'
-                                        : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-border-dark dark:text-slate-300 dark:hover:bg-slate-800'
-                                } ${!link.url ? 'pointer-events-none opacity-40' : ''}`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
+                    {/* Table */}
+                    {logs?.data?.length === 0 ? (
+                        <div className="p-8">
+                            <EmptyState
+                                icon={Activity}
+                                title="No audit entries found"
+                                description="Administrative operations will be logged here automatically."
                             />
-                        ))}
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
+                                    <tr>
+                                        <th className="py-3.5 pl-5 pr-3">Actor</th>
+                                        <th className="py-3.5 px-3">Operation & Method</th>
+                                        <th className="py-3.5 px-3">Resource Target</th>
+                                        <th className="py-3.5 px-3">IP Address</th>
+                                        <th className="py-3.5 pl-3 pr-5 text-right">Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                                    {logs.data.map((item) => (
+                                        <tr
+                                            key={item.id}
+                                            className="hover:bg-slate-50/60 dark:hover:bg-slate-900/40 transition-colors"
+                                        >
+                                            <td className="py-3.5 pl-5 pr-3">
+                                                <p className="font-semibold text-slate-900 dark:text-white">
+                                                    {item.actor?.name || 'Unknown / System'}
+                                                </p>
+                                                <p className="text-[11px] font-mono text-slate-400 capitalize">
+                                                    {item.actor?.role || '-'}
+                                                </p>
+                                            </td>
+
+                                            <td className="py-3.5 px-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant={getActionBadgeVariant(item.action)} size="sm">
+                                                        {item.action}
+                                                    </Badge>
+                                                    <span className="font-mono text-[11px] text-slate-400">
+                                                        {item.method}
+                                                    </span>
+                                                </div>
+                                                <p className="mt-1 text-slate-600 dark:text-slate-300">
+                                                    {item.description || item.route_name || '-'}
+                                                </p>
+                                            </td>
+
+                                            <td className="py-3.5 px-3">
+                                                <p className="font-medium text-slate-800 dark:text-slate-200">
+                                                    {item.subject_label || '-'}
+                                                </p>
+                                                {item.payload_keys?.length > 0 && (
+                                                    <p className="mt-0.5 max-w-xs truncate font-mono text-[10px] text-slate-400">
+                                                        Mutated: {item.payload_keys.join(', ')}
+                                                    </p>
+                                                )}
+                                            </td>
+
+                                            <td className="py-3.5 px-3">
+                                                <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                                                    <Shield className="h-3 w-3 text-slate-400" />
+                                                    {item.ip_address || '-'}
+                                                </span>
+                                            </td>
+
+                                            <td className="py-3.5 pl-3 pr-5 text-right font-mono text-[11px] text-slate-400 whitespace-nowrap">
+                                                {item.created_at}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20">
+                        <Pagination links={logs?.links} meta={logs} />
                     </div>
-                </section>
-            </section>
+                </div>
+            </div>
         </AuthenticatedLayout>
     );
 }

@@ -24,12 +24,29 @@ class LoginRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        $token = $this->input('cf_turnstile_response')
+            ?? $this->input('cf-turnstile-response')
+            ?? $this->input('turnstile_token');
+
+        if ($token) {
+            $this->merge(['cf_turnstile_response' => $token]);
+        }
+    }
+
     public function rules(): array
     {
-        return [
+        $rules = [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ];
+
+        if (app(\App\Services\TurnstileService::class)->isEnabled()) {
+            $rules['cf_turnstile_response'] = ['required', new \App\Rules\TurnstileRule()];
+        }
+
+        return $rules;
     }
 
     /**

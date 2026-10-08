@@ -41,6 +41,12 @@ class WebSettingController extends Controller
                 }
 
                 $validated[$columnName] = $request->file($inputName)->store('web-settings', 'public');
+            } elseif ($request->filled($inputName) && is_string($request->input($inputName))) {
+                $val = $request->input($inputName);
+                if (str_starts_with($val, '/storage/')) {
+                    $val = substr($val, strlen('/storage/'));
+                }
+                $validated[$columnName] = $val;
             }
 
             unset($validated[$inputName]);

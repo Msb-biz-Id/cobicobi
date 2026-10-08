@@ -2,51 +2,67 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Gallery extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'user_id',
         'title',
         'slug',
         'description',
-        'cover_image_path',
-        'is_active',
-    ];
-
-    protected $appends = [
-        'cover_image_url',
+        'cover_image',
+        'category',
+        'event_date',
+        'photographer',
+        'is_published',
+        'views_count',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_active' => 'boolean',
+            'is_published' => 'boolean',
+            'views_count' => 'integer',
+            'event_date' => 'date',
         ];
     }
 
-    public function getCoverImageUrlAttribute(): ?string
+    protected static function booted(): void
     {
-        if (blank($this->cover_image_path)) {
-            return null;
-        }
-
-        return Storage::url($this->cover_image_path);
-    }
-
-    public function author(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id');
+        static::creating(function (Gallery $gallery): void {
+            if (empty($gallery->slug)) {
+                $base = Str::slug($gallery->title);
+                $slug = $base;
+                $counter = 1;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = "{$base}-{$counter}";
+                    $counter++;
+                }
+                $gallery->slug = $slug;
+            }
+        });
     }
 
     public function images(): HasMany
     {
-        return $this->hasMany(GalleryImage::class, 'gallery_id')
-            ->orderBy('sort_order')
-            ->orderByDesc('id');
+        return $this->hasMany(GalleryImage::class)->orderBy('position');
+    }
+
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->where('is_published', true);
+    }
+
+    public function getFormattedDateAttribute(): string
+    {
+        return $this->event_date
+            ? $this->event_date->translatedFormat('d F Y')
+            : $this->created_at->translatedFormat('d F Y');
     }
 }
