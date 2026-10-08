@@ -31,6 +31,7 @@ class Facility extends Model
 
     protected $appends = [
         'primary_image_url',
+        'image_url',
         'category_label',
     ];
 
@@ -53,8 +54,13 @@ class Facility extends Model
             'seni_budaya' => 'Seni & Kebudayaan',
             'layanan_umum' => 'Layanan Publik & Asrama',
             'kesehatan_ibadah' => 'Kesehatan & Ibadah',
-            default => ucfirst(str_replace('_', ' ', $this->category)),
+            default => ucfirst(str_replace('_', ' ', $this->category ?? '')),
         };
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->primary_image_url;
     }
 
     public function getPrimaryImageUrlAttribute(): ?string
@@ -63,7 +69,7 @@ class Facility extends Model
             return null;
         }
 
-        if (str_starts_with($this->primary_image_path, 'http')) {
+        if (str_starts_with($this->primary_image_path, 'http') || str_starts_with($this->primary_image_path, '/')) {
             return $this->primary_image_path;
         }
 

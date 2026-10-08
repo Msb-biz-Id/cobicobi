@@ -93,7 +93,7 @@ export default function Show({ announcement, isPublicView = true, latestAnnounce
         : [];
 
     const pageContent = (
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="site-container py-8 sm:py-12">
             {/* Top Navigation / Breadcrumbs */}
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">

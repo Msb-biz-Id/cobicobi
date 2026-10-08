@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RolePermissionSeeder::class);
+        $this->call(WebSettingSeeder::class);
         $this->call(MenuSeeder::class);
         $this->call(HashtagSeeder::class);
         $this->call(CategorySeeder::class);
@@ -52,12 +53,12 @@ class DatabaseSeeder extends Seeder
         $this->call(PageSeeder::class);
         $this->call(PostSeeder::class);
         $this->call(MediaSeeder::class);
-        $this->call(NotificationSeeder::class);
         $this->call(ContactMessageSeeder::class);
         $this->call(EventSeeder::class);
         $this->call(AnnouncementSeeder::class);
         $this->call(StaffProfileSeeder::class);
         $this->call(AcademicStructureSeeder::class);
+        $this->call(CampusSettingSeeder::class);
         $this->call(FacilityAndExtracurricularSeeder::class);
     }
 }

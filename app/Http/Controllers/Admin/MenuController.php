@@ -45,10 +45,40 @@ class MenuController extends Controller
                 'is_active',
             ]);
 
-        // Sumber konten sistem untuk 1-Click Quick Add
-        $systemSources = [
+        return Inertia::render('Menus/Index', [
+            'menuTree' => $this->buildTree($menus),
+            'menuOptions' => $menus->map(fn (Menu $menu): array => [
+                'id' => $menu->id,
+                'title' => $menu->title,
+                'parent_id' => $menu->parent_id,
+            ])->values()->all(),
+            'systemSources' => $this->getSystemSources(),
+        ]);
+    }
+
+    /**
+     * Sumber konten sistem untuk 1-Click Quick Add Menu builder.
+     *
+     * @return array<string, mixed>
+     */
+    private function getSystemSources(): array
+    {
+        return array_merge(
+            $this->getAcademicSources(),
+            $this->getContentSources()
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function getAcademicSources(): array
+    {
+        return [
             'presets' => [
                 ['title' => 'Beranda', 'url' => '/', 'icon' => 'Home', 'badge' => null, 'description' => 'Halaman Utama Portal'],
+                ['title' => 'Tentang Kami', 'url' => '/tentang', 'icon' => 'Info', 'badge' => null, 'description' => 'Profil, Visi Misi, Sejarah, & Pimpinan Kampus'],
+                ['title' => 'Struktur Organisasi', 'url' => '/struktur-organisasi', 'icon' => 'Landmark', 'badge' => null, 'description' => 'Bagan Tata Kelola, Rektorat, Dekanat, & Unit'],
                 ['title' => 'Fakultas', 'url' => '/fakultas', 'icon' => 'Building2', 'badge' => null, 'description' => 'Direktori Fakultas Kampus'],
                 ['title' => 'Program Studi', 'url' => '/program-studi', 'icon' => 'Library', 'badge' => null, 'description' => 'Seluruh Program Studi & Jenjang'],
                 ['title' => 'Unit & UPT', 'url' => '/unit', 'icon' => 'Network', 'badge' => null, 'description' => 'Biro, Lembaga, dan UPT'],
@@ -59,7 +89,7 @@ class MenuController extends Controller
                 ['title' => 'Berita & Warta', 'url' => '/berita', 'icon' => 'BookCopy', 'badge' => null, 'description' => 'Kabar & Kabar Terkini'],
                 ['title' => 'Pengumuman Resmi', 'url' => '/pengumuman', 'icon' => 'Megaphone', 'badge' => null, 'description' => 'Edaran & Unduhan Dokumen'],
                 ['title' => 'Agenda & Kegiatan', 'url' => '/agenda', 'icon' => 'Calendar', 'badge' => null, 'description' => 'Jadwal Acara & Registrasi'],
-                ['title' => 'Kontak & Informasi', 'url' => '/kontak', 'icon' => 'Phone', 'badge' => null, 'description' => 'Hubungi Layanan Kampus'],
+                ['title' => 'Kontak & Informasi', 'url' => '/kontak', 'icon' => 'Phone', 'badge' => null, 'description' => 'Hubungi Layanan Kampus & Lokasi'],
             ],
             'faculties' => Faculty::query()
                 ->where('is_active', true)
@@ -94,6 +124,15 @@ class MenuController extends Controller
                     'icon' => 'Network',
                     'badge' => null,
                 ]),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function getContentSources(): array
+    {
+        return [
             'facilities' => Facility::query()
                 ->where('is_active', true)
                 ->orderBy('name')
@@ -150,16 +189,6 @@ class MenuController extends Controller
                     'badge' => $g->category,
                 ]),
         ];
-
-        return Inertia::render('Menus/Index', [
-            'menuTree' => $this->buildTree($menus),
-            'menuOptions' => $menus->map(fn (Menu $menu): array => [
-                'id' => $menu->id,
-                'title' => $menu->title,
-                'parent_id' => $menu->parent_id,
-            ])->values()->all(),
-            'systemSources' => $systemSources,
-        ]);
     }
 
     public function store(StoreMenuRequest $request): RedirectResponse

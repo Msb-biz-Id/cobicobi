@@ -100,13 +100,18 @@ class Extracurricular extends Model
         return Storage::url($this->logo_path);
     }
 
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->cover_url;
+    }
+
     public function getCoverUrlAttribute(): ?string
     {
         if (blank($this->cover_image_path)) {
             return null;
         }
 
-        if (str_starts_with($this->cover_image_path, 'http')) {
+        if (str_starts_with($this->cover_image_path, 'http') || str_starts_with($this->cover_image_path, '/')) {
             return $this->cover_image_path;
         }
 

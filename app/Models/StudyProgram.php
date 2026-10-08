@@ -113,7 +113,7 @@ class StudyProgram extends Model
             return null;
         }
 
-        if (str_starts_with($this->cover_image_path, 'http')) {
+        if (str_starts_with($this->cover_image_path, 'http') || str_starts_with($this->cover_image_path, '/')) {
             return $this->cover_image_path;
         }
 

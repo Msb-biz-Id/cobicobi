@@ -16,9 +16,11 @@ class Event extends Model
         'user_id',
         'title',
         'slug',
+        'category_id',
         'category',
         'organizer',
         'status',
+        'published_at',
         'cover_image_path',
         'summary',
         'description',
@@ -43,6 +45,7 @@ class Event extends Model
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'published_at' => 'datetime',
         'registration_deadline' => 'datetime',
         'sponsors' => 'array',
         'quota' => 'integer',
@@ -59,6 +62,17 @@ class Event extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function hashtags(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Hashtag::class, 'hashtag_event')
+            ->withTimestamps();
     }
 
     public function getCoverImageUrlAttribute(): ?string

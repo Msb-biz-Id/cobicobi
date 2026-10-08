@@ -40,6 +40,19 @@ class MenuSeeder extends Seeder
 
         // Anak-anak Mega Menu
         Menu::query()->create([
+            'title' => 'Tentang Kampus',
+            'url' => '/tentang',
+            'type' => 'standard',
+            'target' => '_self',
+            'icon' => 'Info',
+            'description' => 'Profil institusi, visi misi, akreditasi, & nilai luhur',
+            'badge' => null,
+            'parent_id' => $academic->id,
+            'position' => 0,
+            'is_active' => true,
+        ]);
+
+        Menu::query()->create([
             'title' => 'Fakultas',
             'url' => '/fakultas',
             'type' => 'standard',
@@ -48,7 +61,7 @@ class MenuSeeder extends Seeder
             'description' => 'Fakultas Teknik, Kedokteran, Ekonomi, Humaniora, dll',
             'badge' => null,
             'parent_id' => $academic->id,
-            'position' => 0,
+            'position' => 1,
             'is_active' => true,
         ]);
 
@@ -88,6 +101,19 @@ class MenuSeeder extends Seeder
             'badge' => null,
             'parent_id' => $academic->id,
             'position' => 3,
+            'is_active' => true,
+        ]);
+
+        Menu::query()->create([
+            'title' => 'Struktur Organisasi',
+            'url' => '/struktur-organisasi',
+            'type' => 'standard',
+            'target' => '_self',
+            'icon' => 'Landmark',
+            'description' => 'Bagan pimpinan, rektorat, dekanat, prodi, dan biro',
+            'badge' => null,
+            'parent_id' => $academic->id,
+            'position' => 4,
             'is_active' => true,
         ]);
 
@@ -197,6 +223,17 @@ class MenuSeeder extends Seeder
             'target' => '_self',
             'icon' => null, // Mendemonstrasikan menu tanpa icon tetap rapi dan konsisten
             'position' => 5,
+            'is_active' => true,
+        ]);
+
+        // 7. Kontak Kami
+        Menu::query()->create([
+            'title' => 'Kontak',
+            'url' => '/kontak',
+            'type' => 'standard',
+            'target' => '_self',
+            'icon' => 'Phone',
+            'position' => 6,
             'is_active' => true,
         ]);
     }

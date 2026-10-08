@@ -104,4 +104,25 @@ class AcademicStructureTest extends TestCase
         $responseUnit = $this->actingAs($superadmin)->get('/admin/unit-lembaga');
         $responseUnit->assertStatus(200);
     }
+
+    public function test_public_organizational_structure_page_can_be_accessed(): void
+    {
+        $response = $this->get('/struktur-organisasi');
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('Public/OrganizationalStructure/Index')
+            ->has('structure')
+        );
+    }
+
+    public function test_public_contact_page_can_be_accessed(): void
+    {
+        $response = $this->get('/kontak');
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('Public/Contact/Index')
+            ->has('webSetting')
+            ->has('campusSetting')
+        );
+    }
 }

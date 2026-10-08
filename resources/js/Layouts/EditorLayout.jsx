@@ -27,6 +27,7 @@ export default function EditorLayout({
     lastSaved = null,
     onSaveDraft,
     onPublish,
+    onPreview,
     publishLabel = 'Publish',
     publishLoading = false,
     headerActions,
@@ -92,7 +93,17 @@ export default function EditorLayout({
                         {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
                     </button>
 
-                    {headerActions}
+                    {onPreview && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={onPreview}
+                            icon={Eye}
+                            className="hidden sm:inline-flex text-slate-700 dark:text-slate-200"
+                        >
+                            Pratinjau
+                        </Button>
+                    )}
 
                     {onSaveDraft && (
                         <Button

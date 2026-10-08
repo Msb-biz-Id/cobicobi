@@ -8,7 +8,6 @@ import {
     Hash,
     Menu as MenuIcon,
     Mail,
-    Bell,
     Users,
     ShieldCheck,
     Settings,
@@ -27,7 +26,7 @@ import {
     Landmark,
     Compass,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 const menuGroups = [
     {
@@ -40,11 +39,12 @@ const menuGroups = [
     {
         title: 'Akademik & Kelembagaan',
         items: [
+            { label: 'Panel Kampus', icon: Landmark, route: 'admin.campus-settings.edit', activeKey: 'admin.campus-settings.*' },
             { label: 'Master Jabatan', icon: Award, route: 'admin.structural-positions.index', activeKey: 'admin.structural-positions.*' },
             { label: 'Fakultas', icon: Building2, route: 'admin.faculties.index', activeKey: 'admin.faculties.*' },
             { label: 'Program Studi', icon: Library, route: 'admin.study-programs.index', activeKey: 'admin.study-programs.*' },
             { label: 'Unit & Lembaga', icon: Network, route: 'admin.institutional-units.index', activeKey: 'admin.institutional-units.*' },
-            { label: 'Fasilitas Kampus', icon: Landmark, route: 'admin.facilities.index', activeKey: 'admin.facilities.*' },
+            { label: 'Fasilitas Kampus', icon: Building2, route: 'admin.facilities.index', activeKey: 'admin.facilities.*' },
             { label: 'Ekstrakurikuler (UKM)', icon: Compass, route: 'admin.extracurriculars.index', activeKey: 'admin.extracurriculars.*' },
         ],
     },
@@ -72,7 +72,6 @@ const menuGroups = [
         title: 'Communications',
         items: [
             { label: 'Messages', icon: Mail, route: 'contact-messages.index', activeKey: 'contact-messages.*' },
-            { label: 'Notifications', icon: Bell, route: 'notifications.index', activeKey: 'notifications.*' },
         ],
     },
     {
@@ -89,6 +88,8 @@ const menuGroups = [
 export default function AppSidebar({ collapsed = false, onToggleCollapse, isMobileOpen = false, onCloseMobile }) {
     const { url } = usePage();
     const { webSetting } = usePage().props;
+    const navContainerRef = useRef(null);
+    const activeItemRef = useRef(null);
 
     const isActive = (itemRoute, activeKey) => {
         try {
@@ -98,8 +99,32 @@ export default function AppSidebar({ collapsed = false, onToggleCollapse, isMobi
         }
     };
 
+    const handleScroll = (e) => {
+        sessionStorage.setItem('admin_sidebar_scroll_top', e.currentTarget.scrollTop);
+    };
+
+    useEffect(() => {
+        const savedScroll = sessionStorage.getItem('admin_sidebar_scroll_top');
+        if (navContainerRef.current) {
+            if (savedScroll !== null) {
+                navContainerRef.current.scrollTop = parseInt(savedScroll, 10);
+            }
+            // Auto scroll to active item if out of view
+            const timer = setTimeout(() => {
+                if (activeItemRef.current) {
+                    activeItemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            }, 60);
+            return () => clearTimeout(timer);
+        }
+    }, [url]);
+
     const sidebarContent = (
-        <div className="flex h-full flex-col justify-between overflow-y-auto px-3.5 py-4">
+        <div
+            ref={navContainerRef}
+            onScroll={handleScroll}
+            className="flex h-full flex-col justify-between overflow-y-auto px-3.5 py-4"
+        >
             <div>
                 {/* Brand Logo & Name */}
                 <div className={`mb-6 flex items-center gap-3 px-2 ${collapsed ? 'justify-center' : ''}`}>
@@ -113,7 +138,7 @@ export default function AppSidebar({ collapsed = false, onToggleCollapse, isMobi
                     {!collapsed && (
                         <div className="truncate">
                             <h2 className="text-sm font-bold tracking-tight text-slate-900 truncate dark:text-white">
-                                {webSetting?.site_title || 'CMS Lara'}
+                                {webSetting?.site_title || 'Universitas Sains & Teknologi Nusantara'}
                             </h2>
                             <p className="text-[11px] font-medium text-slate-400 truncate">
                                 Admin Suite
@@ -139,6 +164,7 @@ export default function AppSidebar({ collapsed = false, onToggleCollapse, isMobi
                                     return (
                                         <Link
                                             key={iIdx}
+                                            ref={active ? activeItemRef : null}
                                             href={route(item.route)}
                                             className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
                                                 collapsed ? 'justify-center px-2' : ''

@@ -139,7 +139,7 @@ class InstitutionalUnitController extends Controller
     protected function validateUnit(Request $request, ?int $id = null): array
     {
         return $request->validate([
-            'category' => ['required', 'string', Rule::in(['upt', 'lembaga', 'biro', 'organisasi'])],
+            'category' => ['required', 'string', Rule::in(['upt', 'lembaga', 'biro', 'badan_khusus', 'organisasi', 'rektorat', 'senat'])],
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('institutional_units', 'slug')->ignore($id)],
             'code' => ['nullable', 'string', 'max:50'],

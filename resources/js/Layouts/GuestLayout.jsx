@@ -1,7 +1,10 @@
-import { Link } from '@inertiajs/react';
-import { Layers } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { GraduationCap } from 'lucide-react';
 
 export default function GuestLayout({ children }) {
+    const { webSetting } = usePage().props;
+    const siteTitle = webSetting?.site_title || 'Universitas Sains & Teknologi Nusantara';
+
     return (
         <div className="relative flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 py-12 dark:bg-[#090d16]">
             {/* Subtle background glow */}
@@ -10,11 +13,15 @@ export default function GuestLayout({ children }) {
             <div className="relative z-10 w-full max-w-sm">
                 <div className="mb-8 text-center">
                     <Link href="/" className="inline-flex items-center gap-2.5">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 shadow-md shadow-indigo-500/25">
-                            <Layers className="h-6 w-6 text-white" />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 shadow-md shadow-indigo-500/25">
+                            {webSetting?.logo_url ? (
+                                <img src={webSetting.logo_url} alt="Logo" className="h-7 w-7 object-contain" />
+                            ) : (
+                                <GraduationCap className="h-6 w-6 text-white" />
+                            )}
                         </div>
                         <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                            Apparel Studio
+                            {siteTitle}
                         </span>
                     </Link>
                 </div>

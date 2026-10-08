@@ -1,16 +1,31 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
 import EditorLayout from '@/Layouts/EditorLayout';
 import TipTapEditor from '@/Components/Editor/TipTapEditor';
 import DocumentSidebar from '@/Components/Editor/DocumentSidebar';
+import ContentPreviewModal from '@/Components/Editor/ContentPreviewModal';
 import Button from '@/Components/UI/Button';
 import Swal from 'sweetalert2';
 import { Send, CheckCircle2, RotateCcw } from 'lucide-react';
 
-export default function PostEdit({ post, categories = [], hashtags = [] }) {
+export default function PostEdit({
+    post,
+    categories = [],
+    hashtags = [],
+    authors = [],
+    editors = [],
+    currentUser = {},
+}) {
     const isEdit = Boolean(post?.id);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const form = useForm({
+        user_id: post?.user_id || currentUser?.id || '',
+        author_name: post?.author_name || '',
+        editor_id: post?.editor_id || '',
+        editor_name: post?.editor_name || '',
+        source: post?.source || '',
+        source_url: post?.source_url || '',
         title: post?.title || '',
         slug: post?.slug || '',
         excerpt: post?.excerpt || '',
@@ -19,11 +34,18 @@ export default function PostEdit({ post, categories = [], hashtags = [] }) {
         thumbnail_url: post?.thumbnail_url || null,
         category_id: post?.category_id || '',
         hashtag_ids: post?.hashtag_ids || [],
+        new_hashtags: [],
+        published_at: post?.published_at || '',
         meta_title: post?.meta_title || '',
         meta_description: post?.meta_description || '',
         meta_keywords: post?.meta_keywords || '',
         status: post?.status || 'draft',
     });
+
+    const isFutureSchedule = useMemo(() => {
+        if (!form.data.published_at) return false;
+        return new Date(form.data.published_at) > new Date();
+    }, [form.data.published_at]);
 
     const handleSaveDraft = (e) => {
         if (e) e.preventDefault();
@@ -32,7 +54,11 @@ export default function PostEdit({ post, categories = [], hashtags = [] }) {
 
     const handlePublish = (e) => {
         if (e) e.preventDefault();
-        submitForm('published');
+        if (isFutureSchedule || form.data.status === 'scheduled') {
+            submitForm('scheduled');
+        } else {
+            submitForm('published');
+        }
     };
 
     const submitForm = (targetStatus = null) => {
@@ -141,6 +167,28 @@ export default function PostEdit({ post, categories = [], hashtags = [] }) {
         });
     };
 
+    const selectedCategoryName = useMemo(() => {
+        const cat = categories.find((c) => String(c.id) === String(form.data.category_id));
+        return cat?.name || '';
+    }, [categories, form.data.category_id]);
+
+    const selectedTagNames = useMemo(() => {
+        const existingNames = hashtags
+            .filter((h) => (form.data.hashtag_ids || []).includes(h.id))
+            .map((h) => h.name);
+        return [...existingNames, ...(form.data.new_hashtags || [])];
+    }, [hashtags, form.data.hashtag_ids, form.data.new_hashtags]);
+
+    const publishButtonLabel = useMemo(() => {
+        if (isFutureSchedule || form.data.status === 'scheduled') {
+            return 'Jadwalkan Post';
+        }
+        if (form.data.status === 'published') {
+            return 'Perbarui Post';
+        }
+        return 'Publish Post';
+    }, [isFutureSchedule, form.data.status]);
+
     return (
         <EditorLayout
             backUrl={route('posts.index')}
@@ -151,9 +199,8 @@ export default function PostEdit({ post, categories = [], hashtags = [] }) {
             saving={form.processing}
             onSaveDraft={handleSaveDraft}
             onPublish={handlePublish}
-            publishLabel={
-                form.data.status === 'published' ? 'Update Post' : 'Publish Post'
-            }
+            onPreview={() => setPreviewOpen(true)}
+            publishLabel={publishButtonLabel}
             publishLoading={form.processing}
             sidebarContent={
                 <DocumentSidebar
@@ -162,6 +209,9 @@ export default function PostEdit({ post, categories = [], hashtags = [] }) {
                     errors={form.errors}
                     categories={categories}
                     hashtags={hashtags}
+                    authors={authors}
+                    editors={editors}
+                    currentUser={currentUser}
                     revisions={post?.revisions || []}
                     onRollback={handleRollback}
                     workflowActions={
@@ -252,6 +302,31 @@ export default function PostEdit({ post, categories = [], hashtags = [] }) {
                     <p className="text-xs text-rose-500">{form.errors.content}</p>
                 )}
             </div>
+
+            {/* Universal Content Preview Modal */}
+            <ContentPreviewModal
+                isOpen={previewOpen}
+                onClose={() => setPreviewOpen(false)}
+                title="Pratinjau Postingan"
+                type="post"
+                data={form.data}
+                categoryName={selectedCategoryName}
+                tagNames={selectedTagNames}
+                authorName={
+                    form.data.author_name ||
+                    authors.find((u) => String(u.id) === String(form.data.user_id))?.name ||
+                    currentUser?.name ||
+                    'Redaksi Kampus'
+                }
+                editorName={
+                    form.data.editor_name ||
+                    editors.find((e) => String(e.id) === String(form.data.editor_id))?.name ||
+                    ''
+                }
+                source={form.data.source}
+                sourceUrl={form.data.source_url}
+                publicUrl={form.data.slug ? route('public.posts.show', form.data.slug) : null}
+            />
         </EditorLayout>
     );
 }

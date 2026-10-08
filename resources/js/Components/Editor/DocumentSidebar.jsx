@@ -9,6 +9,11 @@ import {
     Sparkles,
     Eye,
     X,
+    Plus,
+    Clock,
+    User,
+    ShieldCheck,
+    Link2,
 } from 'lucide-react';
 import Input from '@/Components/UI/Input';
 import Textarea from '@/Components/UI/Textarea';
@@ -16,6 +21,8 @@ import Select from '@/Components/UI/Select';
 import Button from '@/Components/UI/Button';
 import Badge from '@/Components/UI/Badge';
 import MediaPickerModal from '@/Components/Media/MediaPickerModal';
+import WordPressTagSelector from './WordPressTagSelector';
+import QuickCreateCategoryModal from './QuickCreateCategoryModal';
 
 export default function DocumentSidebar({
     data,
@@ -23,12 +30,36 @@ export default function DocumentSidebar({
     errors = {},
     categories = [],
     hashtags = [],
+    authors = [],
+    editors = [],
+    currentUser = {},
     revisions = [],
     onRollback,
     workflowActions,
 }) {
     const [activeTab, setActiveTab] = useState('document'); // 'document' | 'seo'
     const [featuredImageModal, setFeaturedImageModal] = useState(false);
+    const [createCategoryModalOpen, setCreateCategoryModalOpen] = useState(false);
+    const [categoriesList, setCategoriesList] = useState(categories);
+    const [scheduleMode, setScheduleMode] = useState(Boolean(data.published_at));
+
+    const handleCategoryCreated = (newCat) => {
+        setCategoriesList((prev) => [...prev, newCat]);
+        setData('category_id', newCat.id);
+    };
+
+    const handlePublishDateChange = (val) => {
+        setData((prev) => {
+            const next = { ...prev, published_at: val };
+            if (val) {
+                const targetDate = new Date(val);
+                if (targetDate > new Date()) {
+                    next.status = 'scheduled';
+                }
+            }
+            return next;
+        });
+    };
 
     return (
         <div className="flex flex-col text-xs">
@@ -62,7 +93,7 @@ export default function DocumentSidebar({
                 {activeTab === 'document' ? (
                     <>
                         {/* Status & Workflow Panel */}
-                        <div className="space-y-3 pb-5 border-b border-slate-100 dark:border-slate-800">
+                        <div className="space-y-3.5 pb-5 border-b border-slate-100 dark:border-slate-800">
                             <h4 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider text-[11px]">
                                 Status & Visibility
                             </h4>
@@ -72,6 +103,8 @@ export default function DocumentSidebar({
                                     variant={
                                         data.status === 'published'
                                             ? 'success'
+                                            : data.status === 'scheduled'
+                                            ? 'purple'
                                             : data.status === 'approved'
                                             ? 'purple'
                                             : data.status === 'review'
@@ -82,6 +115,52 @@ export default function DocumentSidebar({
                                     {(data.status || 'draft').toUpperCase()}
                                 </Badge>
                             </div>
+
+                            {/* WordPress Content Scheduling Box */}
+                            <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-900/40 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-indigo-500" />
+                                        Jadwal Terbit
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (scheduleMode) {
+                                                setScheduleMode(false);
+                                                setData('published_at', '');
+                                                if (data.status === 'scheduled') setData('status', 'draft');
+                                            } else {
+                                                setScheduleMode(true);
+                                                const tomorrow = new Date(Date.now() + 86400000).toISOString().substring(0, 16);
+                                                handlePublishDateChange(tomorrow);
+                                            }
+                                        }}
+                                        className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                                    >
+                                        {scheduleMode ? 'Ubah ke Segera' : 'Atur Jadwal'}
+                                    </button>
+                                </div>
+
+                                {scheduleMode ? (
+                                    <div className="space-y-1.5 pt-1">
+                                        <input
+                                            type="datetime-local"
+                                            value={data.published_at ? data.published_at.substring(0, 16) : ''}
+                                            onChange={(e) => handlePublishDateChange(e.target.value)}
+                                            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                        />
+                                        <p className="text-[10px] text-slate-400">
+                                            Artikel akan tayang publik secara otomatis pada waktu ini.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {data.status === 'published' ? 'Sudah diterbitkan' : 'Akan terbit langsung saat tombol Publish ditekan.'}
+                                    </p>
+                                )}
+                            </div>
+
                             {workflowActions && <div className="pt-2">{workflowActions}</div>}
                         </div>
 
@@ -153,59 +232,145 @@ export default function DocumentSidebar({
                             )}
                         </div>
 
-                        {/* Category */}
-                        {categories.length > 0 && (
-                            <div className="space-y-2 pb-5 border-b border-slate-100 dark:border-slate-800">
+                        {/* Category with Quick Create Dialog */}
+                        <div className="space-y-2 pb-5 border-b border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center justify-between">
                                 <h4 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider text-[11px]">
                                     Category
                                 </h4>
-                                <Select
-                                    value={data.category_id || ''}
-                                    onChange={(e) => setData('category_id', e.target.value)}
-                                    options={categories.map((c) => ({ value: c.id, label: c.name }))}
-                                    placeholder="Choose category"
-                                    error={errors.category_id}
+                                <button
+                                    type="button"
+                                    onClick={() => setCreateCategoryModalOpen(true)}
+                                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                                >
+                                    <Plus className="h-3 w-3" />
+                                    Kategori Baru
+                                </button>
+                            </div>
+                            <Select
+                                value={data.category_id || ''}
+                                onChange={(e) => setData('category_id', e.target.value)}
+                                options={categoriesList.map((c) => ({ value: c.id, label: c.name }))}
+                                placeholder="Choose category"
+                                error={errors.category_id}
+                            />
+                        </div>
+
+                        {/* WordPress-Style Tags & Hashtags */}
+                        <div className="pb-5 border-b border-slate-100 dark:border-slate-800">
+                            <WordPressTagSelector
+                                allTags={hashtags}
+                                selectedTagIds={data.hashtag_ids || []}
+                                selectedNewTags={data.new_hashtags || []}
+                                onChange={({ hashtag_ids, new_hashtags }) => {
+                                    setData('hashtag_ids', hashtag_ids);
+                                    setData('new_hashtags', new_hashtags);
+                                }}
+                            />
+                        </div>
+
+                        {/* Atribusi Redaksi: Penulis, Editor & Sumber */}
+                        <div className="space-y-4 pb-5 border-b border-slate-100 dark:border-slate-800">
+                            <h4 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                                <User className="h-3.5 w-3.5 text-indigo-500" />
+                                Redaksi & Sumber
+                            </h4>
+
+                            {/* Penulis (Author) */}
+                            <div className="space-y-2">
+                                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                                    Penulis (Author)
+                                </label>
+                                {currentUser?.canAssignAuthor ? (
+                                    <Select
+                                        value={data.user_id || ''}
+                                        onChange={(e) => setData('user_id', e.target.value)}
+                                        options={[
+                                            { value: '', label: '-- Pilih Akun Penulis --' },
+                                            ...authors.map((u) => ({
+                                                value: u.id,
+                                                label: `${u.name} (${u.role})`,
+                                            })),
+                                        ]}
+                                        placeholder="Pilih Penulis"
+                                        error={errors.user_id}
+                                    />
+                                ) : (
+                                    <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-2.5 dark:border-slate-800 dark:bg-slate-900/40">
+                                        <div className="font-semibold text-slate-800 dark:text-slate-200">
+                                            {authors.find((u) => String(u.id) === String(data.user_id))?.name || currentUser?.name || 'Akun Anda'}
+                                        </div>
+                                        <div className="text-[10px] text-slate-400">
+                                            Terkunci sesuai akun login Anda (Role: {currentUser?.role || 'Author'})
+                                        </div>
+                                    </div>
+                                )}
+                                <Input
+                                    label="Nama Penulis Kustom (Byline / Gelar)"
+                                    placeholder="Contoh: Dr. Budi Santoso, M.Kom / Tim Humas"
+                                    value={data.author_name || ''}
+                                    onChange={(e) => setData('author_name', e.target.value)}
+                                    error={errors.author_name}
+                                    helperText="Opsional. Jika diisi, nama ini yang akan tampil di halaman publik."
                                 />
                             </div>
-                        )}
 
-                        {/* Hashtags / Tags */}
-                        {hashtags.length > 0 && (
-                            <div className="space-y-2 pb-5 border-b border-slate-100 dark:border-slate-800">
-                                <h4 className="font-bold text-slate-900 dark:text-white text-xs uppercase tracking-wider text-[11px]">
-                                    Tags & Hashtags
-                                </h4>
-                                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto">
-                                    {hashtags.map((tag) => {
-                                        const selected = (data.hashtag_ids || []).includes(tag.id);
-                                        return (
-                                            <button
-                                                key={tag.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    const cur = data.hashtag_ids || [];
-                                                    if (selected) {
-                                                        setData(
-                                                            'hashtag_ids',
-                                                            cur.filter((id) => id !== tag.id),
-                                                        );
-                                                    } else {
-                                                        setData('hashtag_ids', [...cur, tag.id]);
-                                                    }
-                                                }}
-                                                className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                                                    selected
-                                                        ? 'bg-indigo-600 text-white'
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                                                }`}
-                                            >
-                                                #{tag.name}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                            {/* Editor (Penyunting) */}
+                            <div className="space-y-2">
+                                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                                    <span>Editor (Penyunting)</span>
+                                    <span className="text-[10px] font-normal text-slate-400 flex items-center gap-1">
+                                        <ShieldCheck className="h-3 w-3 text-emerald-500" /> Tim Redaksi
+                                    </span>
+                                </label>
+                                {currentUser?.canAssignEditor ? (
+                                    <>
+                                        <Select
+                                            value={data.editor_id || ''}
+                                            onChange={(e) => setData('editor_id', e.target.value)}
+                                            options={[
+                                                { value: '', label: '-- Belum Ditugaskan / Otomatis saat Review --' },
+                                                ...editors.map((ed) => ({
+                                                    value: ed.id,
+                                                    label: `${ed.name} (${ed.role})`,
+                                                })),
+                                            ]}
+                                            placeholder="Pilih Editor"
+                                            error={errors.editor_id}
+                                        />
+                                        <Input
+                                            placeholder="Nama Editor Kustom (Opsional)"
+                                            value={data.editor_name || ''}
+                                            onChange={(e) => setData('editor_name', e.target.value)}
+                                            error={errors.editor_name}
+                                        />
+                                    </>
+                                ) : (
+                                    <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-2.5 dark:border-slate-800 dark:bg-slate-900/40 text-[11px] text-slate-500 dark:text-slate-400">
+                                        {data.editor_name || editors.find((e) => String(e.id) === String(data.editor_id))?.name || 'Akan ditugaskan otomatis oleh tim redaksi saat review/approval.'}
+                                    </div>
+                                )}
                             </div>
-                        )}
+
+                            {/* Sumber Berita / Rujukan */}
+                            <div className="space-y-2">
+                                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                                    Sumber Berita & Rujukan
+                                </label>
+                                <Input
+                                    placeholder="Nama Sumber (Contoh: Humas Kampus / Antara News)"
+                                    value={data.source || ''}
+                                    onChange={(e) => setData('source', e.target.value)}
+                                    error={errors.source}
+                                />
+                                <Input
+                                    placeholder="URL Tautan Sumber (https://...)"
+                                    value={data.source_url || ''}
+                                    onChange={(e) => setData('source_url', e.target.value)}
+                                    error={errors.source_url}
+                                />
+                            </div>
+                        </div>
 
                         {/* Excerpt */}
                         <div className="space-y-2 pb-5 border-b border-slate-100 dark:border-slate-800">
@@ -317,6 +482,12 @@ export default function DocumentSidebar({
                 }}
                 title="Select Featured Image"
                 confirmLabel="Set as Featured Image"
+            />
+
+            <QuickCreateCategoryModal
+                isOpen={createCategoryModalOpen}
+                onClose={() => setCreateCategoryModalOpen(false)}
+                onCreated={handleCategoryCreated}
             />
         </div>
     );

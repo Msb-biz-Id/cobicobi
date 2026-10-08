@@ -30,8 +30,40 @@ class AcademicStructureSeeder extends Seeder
                 'slug' => 'wakil-rektor-1',
                 'level' => 1,
                 'target_scope' => 'all',
-                'description' => 'Membantu pimpinan dalam pelaksanaan bidang akademik & kemahasiswaan',
+                'description' => 'Membantu pimpinan dalam pelaksanaan bidang akademik & kurikulum',
                 'sort_order' => 2,
+            ],
+            [
+                'name' => 'Wakil Rektor II (Umum & Keuangan)',
+                'slug' => 'wakil-rektor-2',
+                'level' => 1,
+                'target_scope' => 'all',
+                'description' => 'Membantu pimpinan dalam tata kelola administrasi umum, aset, dan keuangan',
+                'sort_order' => 3,
+            ],
+            [
+                'name' => 'Wakil Rektor III (Kemahasiswaan & Kerjasama)',
+                'slug' => 'wakil-rektor-3',
+                'level' => 1,
+                'target_scope' => 'all',
+                'description' => 'Membantu pimpinan dalam pembinaan mahasiswa, alumni, dan kemitraan',
+                'sort_order' => 4,
+            ],
+            [
+                'name' => 'Ketua Senat Akademik',
+                'slug' => 'ketua-senat',
+                'level' => 1,
+                'target_scope' => 'unit',
+                'description' => 'Ketua badan normatif pertimbangan akademik tertinggi universitas',
+                'sort_order' => 5,
+            ],
+            [
+                'name' => 'Sekretaris Senat Akademik',
+                'slug' => 'sekretaris-senat',
+                'level' => 2,
+                'target_scope' => 'unit',
+                'description' => 'Sekretaris pelaksana persidangan senat akademik',
+                'sort_order' => 6,
             ],
             [
                 'name' => 'Dekan',
@@ -39,7 +71,7 @@ class AcademicStructureSeeder extends Seeder
                 'level' => 2,
                 'target_scope' => 'faculty',
                 'description' => 'Pimpinan dan penanggung jawab tertinggi di tingkat Fakultas',
-                'sort_order' => 3,
+                'sort_order' => 7,
             ],
             [
                 'name' => 'Wakil Dekan I',
@@ -47,7 +79,7 @@ class AcademicStructureSeeder extends Seeder
                 'level' => 2,
                 'target_scope' => 'faculty',
                 'description' => 'Wakil pimpinan bidang akademik di tingkat Fakultas',
-                'sort_order' => 4,
+                'sort_order' => 8,
             ],
             [
                 'name' => 'Ketua Program Studi',
@@ -55,7 +87,7 @@ class AcademicStructureSeeder extends Seeder
                 'level' => 3,
                 'target_scope' => 'study_program',
                 'description' => 'Pimpinan operasional dan pengembangan akademik program studi',
-                'sort_order' => 5,
+                'sort_order' => 9,
             ],
             [
                 'name' => 'Sekretaris Program Studi',
@@ -63,7 +95,39 @@ class AcademicStructureSeeder extends Seeder
                 'level' => 3,
                 'target_scope' => 'study_program',
                 'description' => 'Membantu kaprodi dalam administrasi dan koordinasi akademik',
-                'sort_order' => 6,
+                'sort_order' => 10,
+            ],
+            [
+                'name' => 'Kepala Biro',
+                'slug' => 'kepala-biro',
+                'level' => 2,
+                'target_scope' => 'unit',
+                'description' => 'Pimpinan biro administrasi dan layanan operasional universitas',
+                'sort_order' => 11,
+            ],
+            [
+                'name' => 'Ketua Lembaga (LPPM)',
+                'slug' => 'ketua-lembaga',
+                'level' => 2,
+                'target_scope' => 'unit',
+                'description' => 'Pimpinan lembaga penelitian dan pengabdian masyarakat',
+                'sort_order' => 12,
+            ],
+            [
+                'name' => 'Sekretaris Lembaga',
+                'slug' => 'sekretaris-lembaga',
+                'level' => 3,
+                'target_scope' => 'unit',
+                'description' => 'Sekretaris administrasi dan tata kelola program lembaga',
+                'sort_order' => 13,
+            ],
+            [
+                'name' => 'Kepala Badan Mutu (BPM)',
+                'slug' => 'kepala-badan',
+                'level' => 2,
+                'target_scope' => 'unit',
+                'description' => 'Pimpinan badan penjaminan mutu atau inkubator bisnis khusus',
+                'sort_order' => 14,
             ],
             [
                 'name' => 'Kepala UPT',
@@ -71,15 +135,7 @@ class AcademicStructureSeeder extends Seeder
                 'level' => 2,
                 'target_scope' => 'unit',
                 'description' => 'Pimpinan unit pelaksana teknis fungsional',
-                'sort_order' => 7,
-            ],
-            [
-                'name' => 'Kepala Lembaga / Biro',
-                'slug' => 'kepala-lembaga-biro',
-                'level' => 2,
-                'target_scope' => 'unit',
-                'description' => 'Pimpinan lembaga pengembangan atau biro layanan institusi',
-                'sort_order' => 8,
+                'sort_order' => 15,
             ],
         ];
 
@@ -180,6 +236,7 @@ class AcademicStructureSeeder extends Seeder
                 'email' => 'ti@campus.ac.id',
                 'phone' => '+62 21 8899 1111',
                 'office_location' => 'Gedung FIKRS Lantai 3 Ruang 302',
+                'cover_image_path' => '/images/lab.png',
                 'sort_order' => 1,
                 'is_active' => true,
             ]
@@ -214,6 +271,7 @@ class AcademicStructureSeeder extends Seeder
                 'email' => 'si@campus.ac.id',
                 'phone' => '+62 21 8899 1112',
                 'office_location' => 'Gedung FIKRS Lantai 4 Ruang 402',
+                'cover_image_path' => '/images/building.png',
                 'sort_order' => 2,
                 'is_active' => true,
             ]
@@ -238,10 +296,10 @@ class AcademicStructureSeeder extends Seeder
                 'career_prospects' => [
                     'Junior Fullstack Web Developer',
                     'Mobile Application Developer (Flutter/React Native)',
-                    'Quality Assurance (QA) Tester & Automation',
+                    'QA Tester & Automation',
                     'Junior Database Administrator',
-                    'Technical Support & IT Operations Specialist'
                 ],
+                'cover_image_path' => '/images/students-activity.png',
                 'curriculum_overview' => '<p>Kurikulum vokasi 110 SKS terintegrasi program magang industri 1 tahun penuh (Dual System).</p>',
                 'instagram_url' => 'https://instagram.com/rpla_vokasi',
                 'tiktok_url' => 'https://tiktok.com/@rpla_ngoding',
@@ -253,7 +311,130 @@ class AcademicStructureSeeder extends Seeder
             ]
         );
 
-        // 4. Buat Unit / UPT / Lembaga (Terpisah)
+        // 4. Buat Unit / UPT / Lembaga / Biro / Badan Khusus / Rektorat
+        $rectorateUnit = InstitutionalUnit::updateOrCreate(
+            ['slug' => 'rektorat-dan-pimpinan-universitas'],
+            [
+                'category' => 'rektorat',
+                'name' => 'Rektorat & Pimpinan Universitas',
+                'code' => 'REK',
+                'abbreviation' => 'Rektorat',
+                'description' => '<p>Pimpinan tertinggi eksekutif penyelenggara tridharma perguruan tinggi dan tata kelola universitas.</p>',
+                'vision' => '<p>Mewujudkan tata kelola perguruan tinggi yang transparan, akuntabel, dan bereputasi global.</p>',
+                'mission' => '<ul><li>Memimpin penyelenggaraan pendidikan berkualitas tinggi.</li><li>Membangun jejaring kolaborasi nasional dan internasional.</li></ul>',
+                'services_overview' => '<p>Layanan pimpinan institusi, sekretariat rektorat, dan hubungan masyarakat.</p>',
+                'email' => 'rektorat@campus.ac.id',
+                'phone' => '+62 21 8899 1000',
+                'office_location' => 'Gedung Rektorat Sayap Utama Lantai 4',
+                'sort_order' => 1,
+                'is_active' => true,
+            ]
+        );
+
+        $senatUnit = InstitutionalUnit::updateOrCreate(
+            ['slug' => 'senat-akademik-universitas'],
+            [
+                'category' => 'senat',
+                'name' => 'Senat Akademik Universitas',
+                'code' => 'SENAT',
+                'abbreviation' => 'Senat',
+                'description' => '<p>Badan normatif dan perwakilan akademik tertinggi universitas yang merumuskan dan mengawasi kebijakan tridharma.</p>',
+                'vision' => '<p>Menjaga integritas akademik dan kebebasan mimbar ilmiah sivitas akademika.</p>',
+                'mission' => '<ul><li>Menetapkan norma dan ketentuan pelaksanaan akademik.</li><li>Memberikan pertimbangan pembukaan program studi dan kenaikan jabatan akademik.</li></ul>',
+                'services_overview' => '<p>Sidang pleno akademik, pertimbangan kurikulum, dan pengawasan mutu keilmuan.</p>',
+                'email' => 'senat@campus.ac.id',
+                'phone' => '+62 21 8899 1050',
+                'office_location' => 'Gedung Rektorat Sayap Barat Lantai 3',
+                'sort_order' => 2,
+                'is_active' => true,
+            ]
+        );
+
+        $baakUnit = InstitutionalUnit::updateOrCreate(
+            ['slug' => 'biro-administrasi-akademik-dan-kemahasiswaan-baak'],
+            [
+                'category' => 'biro',
+                'name' => 'Biro Administrasi Akademik & Kemahasiswaan (BAAK)',
+                'code' => 'BAAK',
+                'abbreviation' => 'BAAK',
+                'description' => '<p>Pusat layanan registrasi mahasiswa, penjadwalan kuliah, kartu rencana studi (KRS), transkrip nilai, ijazah, beasiswa, dan kegiatan ormawa.</p>',
+                'services_overview' => '<p>Layanan KRS Online, Legalisir Digital, Surat Keterangan Mahasiswa Aktif, dan Pengelolaan Beasiswa.</p>',
+                'email' => 'baak@campus.ac.id',
+                'phone' => '+62 21 8899 1200',
+                'office_location' => 'Gedung Pelayanan Terpadu Satu Pintu Lantai 1',
+                'sort_order' => 3,
+                'is_active' => true,
+            ]
+        );
+
+        $bauUnit = InstitutionalUnit::updateOrCreate(
+            ['slug' => 'biro-administrasi-umum-dan-keuangan-bau'],
+            [
+                'category' => 'biro',
+                'name' => 'Biro Administrasi Umum & Keuangan (BAU)',
+                'code' => 'BAU',
+                'abbreviation' => 'BAU',
+                'description' => '<p>Biro pelaksana administrasi tata usaha, kepegawaian, perlengkapan sarana prasarana, pengadaan aset, dan akuntansi keuangan kampus.</p>',
+                'services_overview' => '<p>Layanan Pembayaran UKT/SPP, Pemeliharaan Fasilitas Kampus, dan Administrasi SDM/Pegawai.</p>',
+                'email' => 'bau@campus.ac.id',
+                'phone' => '+62 21 8899 1250',
+                'office_location' => 'Gedung Rektorat Sayap Timur Lantai 1',
+                'sort_order' => 4,
+                'is_active' => true,
+            ]
+        );
+
+        $lppmUnit = InstitutionalUnit::updateOrCreate(
+            ['slug' => 'lembaga-penelitian-dan-pengabdian-masyarakat-lppm'],
+            [
+                'category' => 'lembaga',
+                'name' => 'Lembaga Penelitian & Pengabdian kepada Masyarakat (LPPM)',
+                'code' => 'LPPM',
+                'abbreviation' => 'LPPM',
+                'description' => '<p>Mengkoordinasikan seluruh agenda riset kolaboratif, publikasi jurnal bereputasi, hilirisasi paten inovasi, dan program pengabdian masyarakat (KKN Tematik).</p>',
+                'services_overview' => '<p>Pendanaan Hibah Riset Internal, Pengelolaan Sentra HKI/Paten, dan Jurnal Ilmiah Terindeks SINTA/Scopus.</p>',
+                'email' => 'lppm@campus.ac.id',
+                'phone' => '+62 21 8899 1300',
+                'office_location' => 'Gedung Riset dan Inovasi Lantai 3',
+                'sort_order' => 5,
+                'is_active' => true,
+            ]
+        );
+
+        $bpmUnit = InstitutionalUnit::updateOrCreate(
+            ['slug' => 'badan-penjaminan-mutu-bpm'],
+            [
+                'category' => 'badan_khusus',
+                'name' => 'Badan Penjaminan Mutu (BPM)',
+                'code' => 'BPM',
+                'abbreviation' => 'BPM',
+                'description' => '<p>BPM bertugas mengawal penerapan Standar Penjaminan Mutu Internal (SPMI), audit kepatuhan ISO 9001, dan akreditasi nasional/internasional seluruh prodi.</p>',
+                'services_overview' => '<p>Audit Mutu Internal (AMI), Pengukuran Kepuasan Stakeholder, dan Pendampingan Akreditasi Unggul.</p>',
+                'email' => 'bpm@campus.ac.id',
+                'phone' => '+62 21 8899 1400',
+                'office_location' => 'Gedung Rektorat Lantai 2',
+                'sort_order' => 6,
+                'is_active' => true,
+            ]
+        );
+
+        $bibiUnit = InstitutionalUnit::updateOrCreate(
+            ['slug' => 'badan-inkubator-bisnis-dan-inovasi-bibi'],
+            [
+                'category' => 'badan_khusus',
+                'name' => 'Badan Inkubator Bisnis & Inovasi (BIBI)',
+                'code' => 'BIBI',
+                'abbreviation' => 'BIBI',
+                'description' => '<p>Pusat akselerasi dan pendampingan startup mahasiswa, komersialisasi produk riset dosen, serta jejaring pendanaan ventura industri.</p>',
+                'services_overview' => '<p>Program Pra-Inkubasi Startup, Co-Working Space Kreatif, dan Fasilitasi Hak Kekayaan Intelektual.</p>',
+                'email' => 'inkubator@campus.ac.id',
+                'phone' => '+62 21 8899 1450',
+                'office_location' => 'Gedung Inovasi & Technopark Lantai 1',
+                'sort_order' => 7,
+                'is_active' => true,
+            ]
+        );
+
         $uptPerpus = InstitutionalUnit::updateOrCreate(
             ['slug' => 'upt-perpustakaan-dan-literasi-digital'],
             [
@@ -262,15 +443,11 @@ class AcademicStructureSeeder extends Seeder
                 'code' => 'UPT-LIB',
                 'abbreviation' => 'UPT Perpus',
                 'description' => '<p>UPT Perpustakaan menyediakan akses jutaan repositori ilmiah, jurnal internasional terindeks Scopus, ruang collaborative study modern, dan workshop literasi digital.</p>',
-                'vision' => '<p>Menjadi pusat sumber belajar dan literasi ilmiah digital kelas dunia berbasis teknologi informasi ramah pengguna.</p>',
-                'mission' => '<ul><li>Menyediakan koleksi referensi akademik mutakhir fisik dan digital.</li><li>Memfasilitasi ruang belajar kolaboratif yang inklusif dan nyaman.</li></ul>',
                 'services_overview' => '<p>Peminjaman koleksi mandiri (RFID Self-checkout), Akses E-Journal (IEEE, Springer, ScienceDirect), Cek Turnitin Gratis, dan Co-working Space Mahasiswa.</p>',
-                'instagram_url' => 'https://instagram.com/library_campus',
-                'tiktok_url' => 'https://tiktok.com/@library_campus',
                 'email' => 'library@campus.ac.id',
                 'phone' => '+62 21 8899 1500',
                 'office_location' => 'Gedung Perpustakaan Pusat 4 Lantai',
-                'sort_order' => 1,
+                'sort_order' => 8,
                 'is_active' => true,
             ]
         );
@@ -283,41 +460,17 @@ class AcademicStructureSeeder extends Seeder
                 'code' => 'UPT-LAB',
                 'abbreviation' => 'UPT Labkom',
                 'description' => '<p>Pusat komputasi berkinerja tinggi (High-Performance Computing - HPC), laboratorium GPU untuk pelatihan Deep Learning, dan fasilitas uji coba hardware IoT.</p>',
-                'vision' => '<p>Mendukung riset komputasi mutakhir civitas akademika dengan fasilitas infrastruktur berstandar tier-3.</p>',
-                'mission' => '<ul><li>Menyediakan klaster komputasi riset untuk pengolahan big data dan AI.</li><li>Menyelenggarakan pelatihan sertifikasi profesional industri.</li></ul>',
                 'services_overview' => '<p>Cluster Supercomputer GPU Training, Laboratorium IoT & Robotika, Server Hosting Karya Mahasiswa, dan Cloud Lab Virtual.</p>',
-                'instagram_url' => 'https://instagram.com/labkom_campus',
-                'tiktok_url' => 'https://tiktok.com/@labkom_campus',
                 'email' => 'lab@campus.ac.id',
                 'phone' => '+62 21 8899 1555',
                 'office_location' => 'Gedung Riset dan Komputasi Terpadu Lantai 2',
-                'sort_order' => 2,
-                'is_active' => true,
-            ]
-        );
-
-        $lpmpp = InstitutionalUnit::updateOrCreate(
-            ['slug' => 'lembaga-penjaminan-mutu-dan-pengembangan-pendidikan'],
-            [
-                'category' => 'lembaga',
-                'name' => 'Lembaga Penjaminan Mutu dan Pengembangan Pendidikan (LPMPP)',
-                'code' => 'LPMPP',
-                'abbreviation' => 'LPMPP',
-                'description' => '<p>LPMPP bertugas merancang, mengawal, dan mengevaluasi Standar Penjaminan Mutu Internal (SPMI) serta memfasilitasi akreditasi internasional bagi seluruh program studi.</p>',
-                'vision' => '<p>Menjamin terselenggaranya pendidikan tinggi bermutu unggul yang memenuhi standar akreditasi internasional secara konsisten.</p>',
-                'mission' => '<ul><li>Mengembangkan sistem audit mutu akademik internal berbasis digital.</li><li>Mendampingi program studi menuju akreditasi internasional (ABET, ASIIN, FIBAA).</li></ul>',
-                'services_overview' => '<p>Audit Mutu Internal (AMI), Workshop Pengembangan Kurikulum OBE, Pelatihan PEKERTI & AA untuk Dosen Baru.</p>',
-                'email' => 'lpmpp@campus.ac.id',
-                'phone' => '+62 21 8899 1600',
-                'office_location' => 'Gedung Rektorat Lantai 2',
-                'sort_order' => 3,
+                'sort_order' => 9,
                 'is_active' => true,
             ]
         );
 
         // 5. Hubungkan Dosen Pengajar (Multi-Select Dosen) ke Fakultas dan Prodi
         if ($lecturers->isNotEmpty()) {
-            // Assign dosen ke FIKRS
             $fikrsLecturerIds = $lecturers->take(8)->pluck('id')->toArray();
             $syncData = [];
             foreach ($fikrsLecturerIds as $idx => $id) {
@@ -325,7 +478,6 @@ class AcademicStructureSeeder extends Seeder
             }
             $fikrs->lecturers()->sync($syncData);
 
-            // Assign dosen ke Teknik Informatika
             $tiLecturerIds = $lecturers->take(5)->pluck('id')->toArray();
             $tiSync = [];
             foreach ($tiLecturerIds as $idx => $id) {
@@ -333,7 +485,6 @@ class AcademicStructureSeeder extends Seeder
             }
             $ti->lecturers()->sync($tiSync);
 
-            // Assign dosen ke Sistem Informasi
             $siLecturerIds = $lecturers->skip(2)->take(4)->pluck('id')->toArray();
             $siSync = [];
             foreach ($siLecturerIds as $idx => $id) {
@@ -341,120 +492,102 @@ class AcademicStructureSeeder extends Seeder
             }
             $si->lecturers()->sync($siSync);
 
-            // Assign dosen ke Vokasi RPLA
             $rplaLecturerIds = $lecturers->skip(4)->take(4)->pluck('id')->toArray();
             $rplaSync = [];
             foreach ($rplaLecturerIds as $idx => $id) {
                 $rplaSync[$id] = ['role' => 'Instruktur Vokasi', 'sort_order' => $idx + 1];
             }
             $rpla->lecturers()->sync($rplaSync);
-
-            // 6. Penugasan Pejabat Struktural dari Master Data Jabatan
-            $posDekan = StructuralPosition::where('slug', 'dekan')->first();
-            $posWadek = StructuralPosition::where('slug', 'wakil-dekan-1')->first();
-            $posKaprodi = StructuralPosition::where('slug', 'ketua-program-studi')->first();
-            $posSekprodi = StructuralPosition::where('slug', 'sekretaris-program-studi')->first();
-            $posKaUpt = StructuralPosition::where('slug', 'kepala-upt')->first();
-
-            // Dekan FIKRS
-            if ($posDekan && isset($lecturers[0])) {
-                StructuralAssignment::updateOrCreate(
-                    [
-                        'assignable_type' => Faculty::class,
-                        'assignable_id' => $fikrs->id,
-                        'structural_position_id' => $posDekan->id,
-                    ],
-                    [
-                        'staff_profile_id' => $lecturers[0]->id,
-                        'custom_title' => null,
-                        'period_start' => '2024-01-01',
-                        'period_end' => '2028-01-01',
-                        'decree_number' => 'SK-REK/001/I/2024',
-                        'is_current' => true,
-                        'sort_order' => 1,
-                    ]
-                );
-            }
-
-            // Wakil Dekan 1 FIKRS
-            if ($posWadek && isset($lecturers[1])) {
-                StructuralAssignment::updateOrCreate(
-                    [
-                        'assignable_type' => Faculty::class,
-                        'assignable_id' => $fikrs->id,
-                        'structural_position_id' => $posWadek->id,
-                    ],
-                    [
-                        'staff_profile_id' => $lecturers[1]->id,
-                        'custom_title' => null,
-                        'period_start' => '2024-01-01',
-                        'period_end' => '2028-01-01',
-                        'decree_number' => 'SK-REK/002/I/2024',
-                        'is_current' => true,
-                        'sort_order' => 2,
-                    ]
-                );
-            }
-
-            // Kaprodi Teknik Informatika
-            if ($posKaprodi && isset($lecturers[2])) {
-                StructuralAssignment::updateOrCreate(
-                    [
-                        'assignable_type' => StudyProgram::class,
-                        'assignable_id' => $ti->id,
-                        'structural_position_id' => $posKaprodi->id,
-                    ],
-                    [
-                        'staff_profile_id' => $lecturers[2]->id,
-                        'custom_title' => null,
-                        'period_start' => '2024-01-01',
-                        'period_end' => '2028-01-01',
-                        'decree_number' => 'SK-REK/010/I/2024',
-                        'is_current' => true,
-                        'sort_order' => 1,
-                    ]
-                );
-            }
-
-            // Sekprodi Teknik Informatika
-            if ($posSekprodi && isset($lecturers[3])) {
-                StructuralAssignment::updateOrCreate(
-                    [
-                        'assignable_type' => StudyProgram::class,
-                        'assignable_id' => $ti->id,
-                        'structural_position_id' => $posSekprodi->id,
-                    ],
-                    [
-                        'staff_profile_id' => $lecturers[3]->id,
-                        'custom_title' => null,
-                        'period_start' => '2024-01-01',
-                        'period_end' => '2028-01-01',
-                        'decree_number' => 'SK-REK/011/I/2024',
-                        'is_current' => true,
-                        'sort_order' => 2,
-                    ]
-                );
-            }
-
-            // Kepala UPT Labkom
-            if ($posKaUpt && isset($lecturers[4])) {
-                StructuralAssignment::updateOrCreate(
-                    [
-                        'assignable_type' => InstitutionalUnit::class,
-                        'assignable_id' => $uptLab->id,
-                        'structural_position_id' => $posKaUpt->id,
-                    ],
-                    [
-                        'staff_profile_id' => $lecturers[4]->id,
-                        'custom_title' => null,
-                        'period_start' => '2024-01-01',
-                        'period_end' => '2026-01-01',
-                        'decree_number' => 'SK-REK/035/I/2024',
-                        'is_current' => true,
-                        'sort_order' => 1,
-                    ]
-                );
-            }
         }
+
+        // 6. Penugasan Pejabat Struktural dari Master Data Jabatan
+        $posRektor = StructuralPosition::where('slug', 'rektor')->first();
+        $posWarek1 = StructuralPosition::where('slug', 'wakil-rektor-1')->first();
+        $posWarek2 = StructuralPosition::where('slug', 'wakil-rektor-2')->first();
+        $posWarek3 = StructuralPosition::where('slug', 'wakil-rektor-3')->first();
+        $posKetuaSenat = StructuralPosition::where('slug', 'ketua-senat')->first();
+        $posSekretarisSenat = StructuralPosition::where('slug', 'sekretaris-senat')->first();
+        $posDekan = StructuralPosition::where('slug', 'dekan')->first();
+        $posWadek = StructuralPosition::where('slug', 'wakil-dekan-1')->first();
+        $posKaprodi = StructuralPosition::where('slug', 'ketua-program-studi')->first();
+        $posSekprodi = StructuralPosition::where('slug', 'sekretaris-program-studi')->first();
+        $posKaBiro = StructuralPosition::where('slug', 'kepala-biro')->first();
+        $posKetuaLembaga = StructuralPosition::where('slug', 'ketua-lembaga')->first();
+        $posSekretarisLembaga = StructuralPosition::where('slug', 'sekretaris-lembaga')->first();
+        $posKaBadan = StructuralPosition::where('slug', 'kepala-badan')->first();
+        $posKaUpt = StructuralPosition::where('slug', 'kepala-upt')->first();
+
+        // Cari profile pejabat
+        $profAhmad = StaffProfile::where('slug', 'prof-ahmad-wijaya')->first() ?? $lecturers->first();
+        $drRudi = StaffProfile::where('slug', 'dr-rudi-hartono')->first() ?? $lecturers->skip(1)->first();
+        $draMaya = StaffProfile::where('slug', 'dra-maya-lestari')->first() ?? $lecturers->skip(2)->first();
+        $irBudi = StaffProfile::where('slug', 'ir-budi-santoso-mt')->first() ?? $lecturers->skip(3)->first();
+        $drSiti = StaffProfile::where('slug', 'dr-siti-aminah')->first() ?? $lecturers->skip(1)->first();
+        $drHendra = StaffProfile::where('slug', 'dr-hendra-gunawan')->first() ?? $lecturers->skip(2)->first();
+        $profBudi = StaffProfile::where('slug', 'prof-budi-santoso')->first() ?? $lecturers->first();
+        $drWahyu = StaffProfile::where('slug', 'dr-wahyu-hidayat')->first() ?? $lecturers->skip(3)->first();
+        $sariWijaya = StaffProfile::where('slug', 'sari-wijaya-msc')->first() ?? $lecturers->skip(4)->first();
+        $andiPratama = StaffProfile::where('slug', 'andi-pratama-ak')->first() ?? $lecturers->skip(2)->first();
+        $drRatna = StaffProfile::where('slug', 'dr-ratna-dumila')->first() ?? $lecturers->skip(3)->first();
+        $draNurul = StaffProfile::where('slug', 'dra-nurul-hidayah')->first() ?? $lecturers->skip(4)->first();
+        $rinaMarlina = StaffProfile::where('slug', 'rina-marlina')->first() ?? $lecturers->skip(2)->first();
+
+        // Helper penetapan jabatan
+        $assign = function ($assignable, $position, $staff, $order = 1, $customTitle = null) {
+            if ($assignable && $position && $staff) {
+                StructuralAssignment::updateOrCreate(
+                    [
+                        'assignable_type' => get_class($assignable),
+                        'assignable_id' => $assignable->id,
+                        'structural_position_id' => $position->id,
+                    ],
+                    [
+                        'staff_profile_id' => $staff->id,
+                        'custom_title' => $customTitle,
+                        'period_start' => '2024-01-01',
+                        'period_end' => '2028-01-01',
+                        'decree_number' => 'SK-REK/' . str_pad((string)$order, 3, '0', STR_PAD_LEFT) . '/I/2024',
+                        'is_current' => true,
+                        'sort_order' => $order,
+                    ]
+                );
+            }
+        };
+
+        // 1. REKTORAT
+        $assign($rectorateUnit, $posRektor, $profAhmad, 1, 'Rektor');
+        $assign($rectorateUnit, $posWarek1, $drRudi, 2, 'Wakil Rektor I (Bidang Akademik)');
+        $assign($rectorateUnit, $posWarek2, $draMaya, 3, 'Wakil Rektor II (Umum & Keuangan)');
+        $assign($rectorateUnit, $posWarek3, $irBudi, 4, 'Wakil Rektor III (Kemahasiswaan & Kerjasama)');
+
+        // 2. SENAT AKADEMIK
+        $assign($senatUnit, $posKetuaSenat, $drSiti, 1, 'Ketua Senat Akademik');
+        $assign($senatUnit, $posSekretarisSenat, $drHendra, 2, 'Sekretaris Senat Akademik');
+
+        // 3. FAKULTAS & DEKANAT
+        $assign($fikrs, $posDekan, $profBudi, 1, 'Dekan FIKRS');
+        $assign($fikrs, $posWadek, $drHendra, 2, 'Wakil Dekan I FIKRS');
+
+        // 4. PROGRAM STUDI
+        $assign($ti, $posKaprodi, $drWahyu, 1, 'Ketua Program Studi S1 Teknik Informatika');
+        $assign($ti, $posSekprodi, $drHendra, 2, 'Sekretaris Program Studi S1 Teknik Informatika');
+        $assign($si, $posKaprodi, $drSiti, 1, 'Ketua Program Studi S1 Sistem Informasi');
+        $assign($rpla, $posKaprodi, $profBudi, 1, 'Ketua Program Studi D3 Rekayasa Perangkat Lunak Aplikasi');
+
+        // 5. BIRO ADMINISTRASI
+        $assign($baakUnit, $posKaBiro, $draMaya, 1, 'Kepala Biro Administrasi Akademik & Kemahasiswaan');
+        $assign($bauUnit, $posKaBiro, $andiPratama, 1, 'Kepala Biro Administrasi Umum & Keuangan');
+
+        // 6. LEMBAGA
+        $assign($lppmUnit, $posKetuaLembaga, $drWahyu, 1, 'Ketua LPPM');
+        $assign($lppmUnit, $posSekretarisLembaga, $sariWijaya, 2, 'Sekretaris LPPM');
+
+        // 7. BADAN KHUSUS
+        $assign($bpmUnit, $posKaBadan, $drRatna, 1, 'Ketua Badan Penjaminan Mutu (BPM)');
+        $assign($bibiUnit, $posKaBadan, $drRudi, 1, 'Kepala Badan Inkubator Bisnis & Inovasi');
+
+        // 8. UPT
+        $assign($uptPerpus, $posKaUpt, $draNurul, 1, 'Kepala UPT Perpustakaan dan Literasi Digital');
+        $assign($uptLab, $posKaUpt, $rinaMarlina, 1, 'Kepala UPT Laboratorium Riset dan Komputasi Terpadu');
     }
 }

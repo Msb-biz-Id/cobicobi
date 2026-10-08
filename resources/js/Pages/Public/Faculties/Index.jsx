@@ -9,7 +9,7 @@ export default function FacultiesPublicIndex({ faculties = [] }) {
 
             {/* Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50/50 via-white to-white py-16 sm:py-24 dark:from-slate-900/60 dark:via-slate-950 dark:to-slate-950">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center relative z-10">
+                <div className="site-container text-center relative z-10">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800">
                         <Sparkles className="w-3.5 h-3.5 text-indigo-600" /> Pusat Keunggulan Akademik
                     </span>
@@ -23,7 +23,7 @@ export default function FacultiesPublicIndex({ faculties = [] }) {
             </section>
 
             {/* List Faculties */}
-            <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-20">
+            <section className="site-container pb-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {faculties.map((fac) => (
                         <div

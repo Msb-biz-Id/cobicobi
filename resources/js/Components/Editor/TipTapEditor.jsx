@@ -9,7 +9,8 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import TextAlign from '@tiptap/extension-text-align';
-import { useState, useEffect } from 'react';
+import Youtube from '@tiptap/extension-youtube';
+import { useState, useEffect, useCallback } from 'react';
 import EditorToolbar from './EditorToolbar';
 import MediaPickerModal from '@/Components/Media/MediaPickerModal';
 
@@ -22,6 +23,58 @@ export default function TipTapEditor({
 }) {
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
+    // Block Mover Helpers (Gutenberg-style Up / Down)
+    const moveBlockUp = useCallback((ed) => {
+        if (!ed || !ed.view) return false;
+        const { state, dispatch } = ed.view;
+        const { selection, doc } = state;
+        const $from = selection.$from;
+        const index = $from.index(0);
+        if (index <= 0) return false;
+
+        let posBeforePrev = 0;
+        for (let i = 0; i < index - 1; i++) {
+            posBeforePrev += doc.child(i).nodeSize;
+        }
+        const prevNode = doc.child(index - 1);
+        const currentNode = doc.child(index);
+        const currentPos = posBeforePrev + prevNode.nodeSize;
+
+        const tr = state.tr;
+        tr.delete(currentPos, currentPos + currentNode.nodeSize);
+        tr.insert(posBeforePrev, currentNode);
+        const offset = Math.min($from.pos - currentPos, currentNode.nodeSize - 1);
+        const targetPos = Math.max(0, posBeforePrev + Math.max(1, offset));
+        tr.setSelection(selection.constructor.near(tr.doc.resolve(targetPos)));
+        dispatch(tr.scrollIntoView());
+        return true;
+    }, []);
+
+    const moveBlockDown = useCallback((ed) => {
+        if (!ed || !ed.view) return false;
+        const { state, dispatch } = ed.view;
+        const { selection, doc } = state;
+        const $from = selection.$from;
+        const index = $from.index(0);
+        if (index >= doc.childCount - 1) return false;
+
+        let currentPos = 0;
+        for (let i = 0; i < index; i++) {
+            currentPos += doc.child(i).nodeSize;
+        }
+        const currentNode = doc.child(index);
+        const nextNode = doc.child(index + 1);
+
+        const tr = state.tr;
+        tr.delete(currentPos, currentPos + currentNode.nodeSize);
+        tr.insert(currentPos + nextNode.nodeSize, currentNode);
+        const offset = Math.min($from.pos - currentPos, currentNode.nodeSize - 1);
+        const targetPos = Math.max(0, currentPos + nextNode.nodeSize + Math.max(1, offset));
+        tr.setSelection(selection.constructor.near(tr.doc.resolve(targetPos)));
+        dispatch(tr.scrollIntoView());
+        return true;
+    }, []);
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -33,6 +86,16 @@ export default function TipTapEditor({
                 allowBase64: true,
                 HTMLAttributes: {
                     class: 'rounded-xl max-w-full my-4 mx-auto shadow-sm',
+                },
+            }),
+            Youtube.configure({
+                inline: false,
+                controls: true,
+                nocookie: true,
+                allowFullscreen: true,
+                autoplay: false,
+                HTMLAttributes: {
+                    class: 'aspect-video w-full rounded-2xl shadow-md my-6 mx-auto overflow-hidden border border-slate-200 dark:border-slate-800',
                 },
             }),
             Link.configure({
@@ -58,6 +121,17 @@ export default function TipTapEditor({
         editorProps: {
             attributes: {
                 class: 'prose prose-slate max-w-none focus:outline-none dark:prose-invert p-6 min-h-[300px] text-base leading-relaxed',
+            },
+            handleKeyDown: (view, event) => {
+                if (event.altKey && event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    if (editor) return moveBlockUp(editor);
+                }
+                if (event.altKey && event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    if (editor) return moveBlockDown(editor);
+                }
+                return false;
             },
         },
         onUpdate: ({ editor }) => {
@@ -94,6 +168,8 @@ export default function TipTapEditor({
             <EditorToolbar
                 editor={editor}
                 onOpenMediaPicker={() => setMediaPickerOpen(true)}
+                onMoveBlockUp={() => moveBlockUp(editor)}
+                onMoveBlockDown={() => moveBlockDown(editor)}
             />
 
             <div style={{ minHeight }} className="tiptap-wrapper">

@@ -267,9 +267,21 @@ export default function PostsIndex({
                                             )}
                                         </td>
 
-                                        {/* Author */}
+                                        {/* Author & Editorial */}
                                         <td className="py-3.5 px-3 whitespace-nowrap text-slate-600 dark:text-slate-300">
-                                            {post.author?.name || '-'}
+                                            <div className="font-semibold text-slate-900 dark:text-white">
+                                                {post.author_name || post.author?.name || '-'}
+                                            </div>
+                                            {(post.editor_name || post.editor?.name) && (
+                                                <div className="text-[10px] text-slate-400">
+                                                    Ed: {post.editor_name || post.editor?.name}
+                                                </div>
+                                            )}
+                                            {post.source && (
+                                                <div className="text-[10px] text-indigo-500 dark:text-indigo-400 truncate max-w-[140px]">
+                                                    Src: {post.source}
+                                                </div>
+                                            )}
                                         </td>
 
                                         {/* Status */}

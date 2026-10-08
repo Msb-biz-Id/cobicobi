@@ -22,7 +22,7 @@ import {
 import { useState } from 'react';
 import Button from '@/Components/UI/Button';
 
-export default function Show({ event, isPublicView = true, otherEvents = [] }) {
+export default function Show({ event, isPublicView = true, otherEvents = [], isPreview = false }) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
@@ -37,7 +37,17 @@ export default function Show({ event, isPublicView = true, otherEvents = [] }) {
     const textSponsors = sponsorsList.filter((s) => !s.logo_url && Boolean(s.name));
 
     const content = (
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="site-container py-8 sm:py-12">
+            {isPreview && (
+                <div className="mb-6 rounded-2xl bg-amber-500 text-white px-4 py-3 shadow-md flex items-center justify-between text-xs font-semibold">
+                    <div className="flex items-center gap-2">
+                        <span className="rounded bg-black/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                            Mode Pratinjau
+                        </span>
+                        <span>Event ini berstatus <strong>{(event.status || 'draft').toUpperCase()}</strong> dan belum tayang secara publik.</span>
+                    </div>
+                </div>
+            )}
             {/* Top Navigation / Breadcrumbs */}
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -303,8 +313,8 @@ export default function Show({ event, isPublicView = true, otherEvents = [] }) {
                 </div>
 
                 {/* Right 1 Col: Floating Sticky Registration Action Card */}
-                <div className="space-y-6">
-                    <div className="sticky top-24 rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xl shadow-slate-200/50 dark:border-slate-800/80 dark:bg-slate-900/90 dark:shadow-none space-y-6">
+                <div className="space-y-6 lg:sticky lg:top-24 self-start">
+                    <div className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xl shadow-slate-200/50 dark:border-slate-800/80 dark:bg-slate-900/90 dark:shadow-none space-y-6">
                         <div className="border-b border-slate-100 pb-5 dark:border-slate-800">
                             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
                                 Investasi / Biaya Kehadiran

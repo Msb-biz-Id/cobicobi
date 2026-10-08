@@ -70,7 +70,7 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function store(StoreCategoryRequest $request): RedirectResponse
+    public function store(StoreCategoryRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $validated = $request->validated();
 
@@ -79,7 +79,19 @@ class CategoryController extends Controller
         }
 
         unset($validated['image']);
-        Category::create($validated);
+        $category = Category::create($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'id' => $category->id,
+                'category' => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                ],
+            ]);
+        }
 
         return back()->with('success', 'Kategori berhasil ditambahkan.');
     }

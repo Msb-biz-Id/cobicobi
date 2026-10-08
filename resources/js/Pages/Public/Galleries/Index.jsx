@@ -48,7 +48,7 @@ export default function PublicGalleriesIndex({ galleries, filters, categories, s
             {/* Hero Banner Section */}
             <section className="relative overflow-hidden bg-gradient-to-b from-indigo-950 via-slate-900 to-slate-900 py-16 text-white sm:py-24">
                 <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:16px_16px]" />
-                <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="relative site-container">
                     <div className="mx-auto max-w-3xl text-center">
                         <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3.5 py-1 text-xs font-semibold text-indigo-300 backdrop-blur-md">
                             <Sparkles className="h-3.5 w-3.5" />
@@ -100,7 +100,7 @@ export default function PublicGalleriesIndex({ galleries, filters, categories, s
             </section>
 
             {/* Filter Kategori & Konten Galeri */}
-            <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+            <section className="site-container py-10">
                 {/* Kategori Filter Tabs */}
                 {categories.length > 0 && (
                     <div className="mb-8 flex flex-wrap items-center gap-2 border-b border-slate-200/80 pb-4 dark:border-slate-800">

@@ -60,27 +60,31 @@ class EventController extends Controller
 
     public function create(): Response
     {
-        $categories = [
-            'Seminar',
-            'Workshop',
-            'Konferensi',
-            'Kuliah Umum',
-            'Wisuda',
-            'Lomba & Kompetisi',
-            'Dies Natalis',
-            'Job Fair & Expo',
-            'Webinar',
-        ];
-
         return Inertia::render('Events/Edit', [
             'event' => null,
-            'categories' => $categories,
+            'categories' => \App\Models\Category::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'hashtags' => \App\Models\Hashtag::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
 
     public function store(StoreEventRequest $request): RedirectResponse
     {
         $data = $request->validated();
+        $hashtagIds = $data['hashtag_ids'] ?? [];
+
+        if (!empty($data['new_hashtags'])) {
+            foreach ($data['new_hashtags'] as $tagName) {
+                $cleanName = trim($tagName);
+                if ($cleanName !== '') {
+                    $tag = \App\Models\Hashtag::firstOrCreate(
+                        ['name' => $cleanName],
+                        ['slug' => Str::slug($cleanName), 'is_active' => true]
+                    );
+                    $hashtagIds[] = $tag->id;
+                }
+            }
+        }
+        $hashtagIds = array_values(array_unique($hashtagIds));
         
         $baseSlug = !empty($data['slug']) ? Str::slug($data['slug']) : Str::slug($data['title']);
         $slug = $baseSlug;
@@ -92,11 +96,27 @@ class EventController extends Controller
         $data['slug'] = $slug;
         $data['user_id'] = $request->user()?->id;
 
+        if (!empty($data['category_id'])) {
+            $cat = \App\Models\Category::find($data['category_id']);
+            if ($cat) {
+                $data['category'] = $cat->name;
+            }
+        }
+
+        if (($data['status'] ?? '') === 'scheduled' && !empty($data['published_at'])) {
+            // Keep scheduled & published_at
+        } elseif (($data['status'] ?? '') === 'published') {
+            $data['published_at'] = $data['published_at'] ?? now();
+        }
+
+        unset($data['hashtag_ids'], $data['new_hashtags']);
+
         if (isset($data['description'])) {
             $data['description'] = \App\Services\HtmlSanitizer::clean($data['description']);
         }
 
         $event = Event::create($data);
+        $event->hashtags()->sync($hashtagIds);
 
         return redirect()
             ->route('events.show', $event)
@@ -105,7 +125,7 @@ class EventController extends Controller
 
     public function show(Event $event): Response
     {
-        $event->load('user:id,name');
+        $event->load(['user:id,name', 'category:id,name', 'hashtags:id,name,slug']);
 
         return Inertia::render('Events/Show', [
             'event' => $event,
@@ -118,7 +138,7 @@ class EventController extends Controller
             abort(404);
         }
 
-        $event->load('user:id,name');
+        $event->load(['user:id,name', 'category:id,name', 'hashtags:id,name,slug']);
 
         return Inertia::render('Events/Show', [
             'event' => $event,
@@ -128,27 +148,37 @@ class EventController extends Controller
 
     public function edit(Event $event): Response
     {
-        $categories = [
-            'Seminar',
-            'Workshop',
-            'Konferensi',
-            'Kuliah Umum',
-            'Wisuda',
-            'Lomba & Kompetisi',
-            'Dies Natalis',
-            'Job Fair & Expo',
-            'Webinar',
-        ];
+        $event->load(['category:id,name', 'hashtags:id,name,slug']);
+
+        $eventData = $event->toArray();
+        $eventData['hashtag_ids'] = $event->hashtags->pluck('id')->all();
+        $eventData['published_at'] = $event->published_at ? $event->published_at->format('Y-m-d\TH:i') : '';
 
         return Inertia::render('Events/Edit', [
-            'event' => $event,
-            'categories' => $categories,
+            'event' => $eventData,
+            'categories' => \App\Models\Category::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'hashtags' => \App\Models\Hashtag::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']),
         ]);
     }
 
     public function update(UpdateEventRequest $request, Event $event): RedirectResponse
     {
         $data = $request->validated();
+        $hashtagIds = $data['hashtag_ids'] ?? [];
+
+        if (!empty($data['new_hashtags'])) {
+            foreach ($data['new_hashtags'] as $tagName) {
+                $cleanName = trim($tagName);
+                if ($cleanName !== '') {
+                    $tag = \App\Models\Hashtag::firstOrCreate(
+                        ['name' => $cleanName],
+                        ['slug' => Str::slug($cleanName), 'is_active' => true]
+                    );
+                    $hashtagIds[] = $tag->id;
+                }
+            }
+        }
+        $hashtagIds = array_values(array_unique($hashtagIds));
 
         if (!empty($data['slug'])) {
             $baseSlug = Str::slug($data['slug']);
@@ -161,11 +191,27 @@ class EventController extends Controller
             $data['slug'] = $slug;
         }
 
+        if (!empty($data['category_id'])) {
+            $cat = \App\Models\Category::find($data['category_id']);
+            if ($cat) {
+                $data['category'] = $cat->name;
+            }
+        }
+
+        if (($data['status'] ?? '') === 'scheduled' && !empty($data['published_at'])) {
+            // Keep scheduled & published_at
+        } elseif (($data['status'] ?? '') === 'published' && empty($data['published_at'])) {
+            $data['published_at'] = $event->published_at ?: now();
+        }
+
+        unset($data['hashtag_ids'], $data['new_hashtags']);
+
         if (isset($data['description'])) {
             $data['description'] = \App\Services\HtmlSanitizer::clean($data['description']);
         }
 
         $event->update($data);
+        $event->hashtags()->sync($hashtagIds);
 
         return redirect()
             ->route('events.show', $event)

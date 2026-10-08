@@ -96,16 +96,16 @@ export default function DynamicNavbar({ menus = [] }) {
                             key={item.id}
                             href={item.url || '#'}
                             target={item.target || '_self'}
-                            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                                 active
-                                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 font-bold'
+                                    ? 'bg-primary-50 text-primary-600 dark:bg-primary-950/60 dark:text-primary-400 font-extrabold'
                                     : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/60'
                             }`}
                         >
-                            {renderDynamicIcon(item.icon, 'h-3.5 w-3.5 text-indigo-500 shrink-0')}
+                            {renderDynamicIcon(item.icon, 'h-3.5 w-3.5 text-primary-500 shrink-0')}
                             <span>{item.title}</span>
                             {item.badge && (
-                                <span className="rounded-full bg-indigo-100 px-1.5 py-0.2 text-[9px] font-bold text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
+                                <span className="rounded-full bg-primary-100 px-1.5 py-0.2 text-[9px] font-bold text-primary-700 dark:bg-primary-900/60 dark:text-primary-300">
                                     {item.badge}
                                 </span>
                             )}
@@ -123,22 +123,22 @@ export default function DynamicNavbar({ menus = [] }) {
                     >
                         <button
                             type="button"
-                            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                                 active || isOpen
-                                    ? 'bg-indigo-50/80 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400'
+                                    ? 'bg-primary-50/80 text-primary-600 dark:bg-primary-950/60 dark:text-primary-400'
                                     : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/60'
                             }`}
                         >
-                            {renderDynamicIcon(item.icon, 'h-3.5 w-3.5 text-indigo-500 shrink-0')}
+                            {renderDynamicIcon(item.icon, 'h-3.5 w-3.5 text-primary-500 shrink-0')}
                             <span>{item.title}</span>
                             {item.badge && (
-                                <span className="rounded-full bg-indigo-100 px-1.5 py-0.2 text-[9px] font-bold text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
+                                <span className="rounded-full bg-primary-100 px-1.5 py-0.2 text-[9px] font-bold text-primary-700 dark:bg-primary-900/60 dark:text-primary-300">
                                     {item.badge}
                                 </span>
                             )}
                             <ChevronDown
                                 className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
-                                    isOpen ? 'rotate-180 text-indigo-500' : ''
+                                    isOpen ? 'rotate-180 text-primary-500' : ''
                                 }`}
                             />
                         </button>
@@ -151,7 +151,7 @@ export default function DynamicNavbar({ menus = [] }) {
                                     {item.description && (
                                         <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-3.5 dark:border-slate-800">
                                             <div className="flex items-center gap-2">
-                                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+                                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400">
                                                     {renderDynamicIcon(item.icon, 'h-4 w-4')}
                                                 </div>
                                                 <div>
@@ -190,19 +190,19 @@ export default function DynamicNavbar({ menus = [] }) {
                                                 className="group flex items-start gap-3 rounded-2xl p-3 transition hover:bg-slate-50 dark:hover:bg-slate-900/60 border border-transparent hover:border-slate-200/60 dark:hover:border-slate-800"
                                             >
                                                 {sub.icon ? (
-                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm dark:bg-indigo-950/50 dark:text-indigo-400">
+                                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 group-hover:scale-110 group-hover:bg-primary-600 group-hover:text-white transition-all shadow-sm dark:bg-primary-950/50 dark:text-primary-400">
                                                         {renderDynamicIcon(sub.icon, 'h-4 w-4')}
                                                     </div>
                                                 ) : (
-                                                    <div className="flex h-2 w-2 shrink-0 rounded-full bg-indigo-400 mt-2" />
+                                                    <div className="flex h-2 w-2 shrink-0 rounded-full bg-primary-400 mt-2" />
                                                 )}
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className="truncate text-xs font-bold text-slate-800 group-hover:text-indigo-600 dark:text-slate-200 dark:group-hover:text-indigo-400">
+                                                        <span className="truncate text-xs font-bold text-slate-800 group-hover:text-primary-600 dark:text-slate-200 dark:group-hover:text-primary-400">
                                                             {sub.title}
                                                         </span>
                                                         {sub.badge && (
-                                                            <span className="rounded-md bg-indigo-100 px-1 py-0.2 text-[8px] font-bold text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
+                                                            <span className="rounded-md bg-primary-100 px-1 py-0.2 text-[8px] font-bold text-primary-700 dark:bg-primary-900/60 dark:text-primary-300">
                                                                 {sub.badge}
                                                             </span>
                                                         )}
@@ -218,15 +218,15 @@ export default function DynamicNavbar({ menus = [] }) {
                                     </div>
 
                                     {/* Footer Highlight di Mega Menu */}
-                                    <div className="mt-5 flex items-center justify-between rounded-2xl bg-gradient-to-r from-indigo-50/70 via-indigo-50/30 to-transparent p-3 dark:from-indigo-950/30 dark:via-transparent border border-indigo-100/50 dark:border-indigo-900/30">
-                                        <div className="flex items-center gap-2 text-xs text-indigo-950 dark:text-indigo-200">
-                                            <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                                            <span className="font-semibold">Portal Penerimaan & Informasi Kampus</span>
+                                    <div className="mt-5 flex items-center justify-between rounded-2xl bg-gradient-to-r from-primary-50/70 via-primary-50/30 to-transparent p-3 dark:from-primary-950/30 dark:via-transparent border border-primary-100/50 dark:border-primary-900/30">
+                                        <div className="flex items-center gap-2 text-xs text-primary-950 dark:text-primary-200">
+                                            <Sparkles className="h-4 w-4 text-primary-600 dark:text-primary-400 shrink-0" />
+                                            <span className="font-bold">Portal Penerimaan & Informasi Kampus</span>
                                         </div>
                                         <Link
                                             href={route('public.events.index')}
                                             onClick={() => setOpenDropdownId(null)}
-                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:underline dark:text-indigo-400"
+                                            className="inline-flex items-center gap-1 text-[11px] font-bold text-primary-600 hover:underline dark:text-primary-400"
                                         >
                                             Lihat Kalender Akademik
                                             <ArrowUpRight className="h-3 w-3" />
@@ -249,17 +249,17 @@ export default function DynamicNavbar({ menus = [] }) {
                                             className="group flex items-start gap-2.5 rounded-xl p-2.5 transition hover:bg-slate-50 dark:hover:bg-slate-900/60"
                                         >
                                             {sub.icon && (
-                                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition shadow-sm dark:bg-indigo-950/50 dark:text-indigo-400">
+                                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 group-hover:bg-primary-600 group-hover:text-white transition shadow-sm dark:bg-primary-950/50 dark:text-primary-400">
                                                     {renderDynamicIcon(sub.icon, 'h-3.5 w-3.5')}
                                                 </div>
                                             )}
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 dark:text-slate-200 dark:group-hover:text-indigo-400 truncate">
+                                                    <span className="text-xs font-bold text-slate-800 group-hover:text-primary-600 dark:text-slate-200 dark:group-hover:text-primary-400 truncate">
                                                         {sub.title}
                                                     </span>
                                                     {sub.badge && (
-                                                        <span className="rounded bg-indigo-100 px-1 py-0.2 text-[9px] font-bold text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
+                                                        <span className="rounded bg-primary-100 px-1 py-0.2 text-[9px] font-bold text-primary-700 dark:bg-primary-900/60 dark:text-primary-300">
                                                             {sub.badge}
                                                         </span>
                                                     )}

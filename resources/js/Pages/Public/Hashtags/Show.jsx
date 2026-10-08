@@ -8,7 +8,7 @@ export default function Show({ hashtag, posts }) {
         <PublicLayout>
             <Head title={`Arsip Tag: #${hashtag.name} - Warta Universitas`} />
 
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10">
+            <div className="site-container py-10 sm:py-16 space-y-10">
                 <div className="max-w-2xl space-y-3">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/40">
                         <Tag className="h-3.5 w-3.5" />

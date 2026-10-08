@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\CmsNotification;
 use App\Models\WebSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -43,7 +42,6 @@ class HandleInertiaRequests extends Middleware
             ],
             'webSetting' => fn () => $this->sharedWebSetting(),
             'navigationMenus' => fn () => $this->sharedNavigationMenus(),
-            'headerNotifications' => fn () => $this->sharedHeaderNotifications($request),
             'turnstile' => [
                 'enabled' => (bool) config('services.turnstile.enabled', false),
                 'site_key' => config('services.turnstile.site_key', ''),
@@ -81,52 +79,9 @@ class HandleInertiaRequests extends Middleware
             'x_url' => $setting->x_url,
             'linkedin_url' => $setting->linkedin_url,
             'threads_url' => $setting->threads_url,
-        ];
-    }
-
-    private function sharedHeaderNotifications(Request $request): array
-    {
-        $user = $request->user();
-        if (!$user || !Schema::hasTable('cms_notifications')) {
-            return [
-                'total' => 0,
-                'items' => [],
-            ];
-        }
-
-        $query = CmsNotification::query()
-            ->where('is_active', true)
-            ->where(function ($innerQuery) use ($user): void {
-                $innerQuery
-                    ->where('target_role', 'all')
-                    ->orWhere('target_role', $user->role);
-            })
-            ->where(function ($innerQuery): void {
-                $innerQuery
-                    ->whereNull('published_at')
-                    ->orWhere('published_at', '<=', now());
-            });
-
-        $total = (clone $query)->count();
-        $items = $query
-            ->orderByDesc('published_at')
-            ->latest('id')
-            ->limit(3)
-            ->get(['id', 'title', 'message', 'type', 'link_url', 'published_at', 'created_at'])
-            ->map(fn (CmsNotification $notification): array => [
-                'id' => $notification->id,
-                'title' => $notification->title,
-                'message' => $notification->message,
-                'type' => $notification->type,
-                'link_url' => $notification->link_url,
-                'time' => ($notification->published_at ?? $notification->created_at)?->diffForHumans(),
-            ])
-            ->values()
-            ->all();
-
-        return [
-            'total' => $total,
-            'items' => $items,
+            'theme_typography' => $setting->getResolvedTypography(),
+            'theme_colors' => $setting->getResolvedColors(),
+            'theme_layout' => $setting->getResolvedLayout(),
         ];
     }
 

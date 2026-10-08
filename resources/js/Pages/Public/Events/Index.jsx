@@ -47,7 +47,7 @@ export default function Index({ events, filters, categories = [] }) {
         <PublicLayout>
             <Head title="Kalender Agenda & Event Kampus" />
 
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-10">
+            <div className="site-container py-10 sm:py-16 space-y-10">
                 {/* Header Title */}
                 <div className="max-w-2xl space-y-3">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/40">

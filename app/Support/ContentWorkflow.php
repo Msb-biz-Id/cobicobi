@@ -9,6 +9,7 @@ class ContentWorkflow
     public const STATUS_DRAFT = 'draft';
     public const STATUS_REVIEW = 'review';
     public const STATUS_APPROVED = 'approved';
+    public const STATUS_SCHEDULED = 'scheduled';
     public const STATUS_PUBLISHED = 'published';
 
     /**
@@ -20,6 +21,7 @@ class ContentWorkflow
             self::STATUS_DRAFT,
             self::STATUS_REVIEW,
             self::STATUS_APPROVED,
+            self::STATUS_SCHEDULED,
             self::STATUS_PUBLISHED,
         ];
     }
@@ -71,7 +73,7 @@ class ContentWorkflow
                 && self::canPublish($user),
             'send_back' => in_array(
                 $status,
-                [self::STATUS_REVIEW, self::STATUS_APPROVED, self::STATUS_PUBLISHED],
+                [self::STATUS_REVIEW, self::STATUS_APPROVED, self::STATUS_SCHEDULED, self::STATUS_PUBLISHED],
                 true,
             ) && self::canSendBack($user),
         ];

@@ -67,8 +67,12 @@ class InstitutionalUnit extends Model
     public function getCategoryLabelAttribute(): string
     {
         return match ($this->category) {
+            'rektorat' => 'Rektorat & Pimpinan',
+            'senat' => 'Senat Akademik',
+            'biro' => 'Biro Administrasi',
+            'lembaga' => 'Lembaga Kampus',
             'upt' => 'Unit Pelaksana Teknis (UPT)',
-            'lembaga' => 'Lembaga / Biro',
+            'badan_khusus' => 'Badan Khusus',
             'organisasi' => 'Organisasi & Badan Khusus',
             default => strtoupper($this->category),
         };

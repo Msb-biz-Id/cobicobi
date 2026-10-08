@@ -157,9 +157,12 @@ export default function InstitutionalUnitForm({ unit, positions = [], staffList 
                                         onChange={(e) => setData('category', e.target.value)}
                                         className="mt-1 w-full text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-slate-900 dark:text-white"
                                     >
+                                        <option value="rektorat">Rektorat & Pimpinan Kampus</option>
+                                        <option value="senat">Senat Akademik</option>
+                                        <option value="biro">Biro Administrasi / Layanan</option>
+                                        <option value="lembaga">Lembaga (LPPM, LPMPP)</option>
                                         <option value="upt">UPT (Unit Pelaksana Teknis)</option>
-                                        <option value="lembaga">Lembaga</option>
-                                        <option value="biro">Biro Layanan</option>
+                                        <option value="badan_khusus">Badan Khusus (BPM, Inkubator Bisnis)</option>
                                         <option value="organisasi">Badan / Organisasi Khusus</option>
                                     </select>
                                 </div>

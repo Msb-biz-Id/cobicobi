@@ -12,6 +12,7 @@ class Post extends Model
 {
     protected $fillable = [
         'user_id',
+        'author_name',
         'category_id',
         'title',
         'slug',
@@ -27,11 +28,17 @@ class Post extends Model
         'approved_at',
         'reviewed_by',
         'approved_by',
+        'editor_id',
+        'editor_name',
+        'source',
+        'source_url',
         'published_at',
     ];
 
     protected $appends = [
         'thumbnail_url',
+        'display_author',
+        'display_editor',
     ];
 
     protected function casts(): array
@@ -51,12 +58,31 @@ class Post extends Model
             return null;
         }
 
+        if (str_starts_with($this->thumbnail_path, 'http://') || str_starts_with($this->thumbnail_path, 'https://') || str_starts_with($this->thumbnail_path, '/')) {
+            return $this->thumbnail_path;
+        }
+
         return Storage::url($this->thumbnail_path);
+    }
+
+    public function getDisplayAuthorAttribute(): string
+    {
+        return $this->author_name ?: ($this->author?->name ?? 'Anonim');
+    }
+
+    public function getDisplayEditorAttribute(): ?string
+    {
+        return $this->editor_name ?: ($this->editor?->name ?? null);
     }
 
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function editor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'editor_id');
     }
 
     public function user(): BelongsTo

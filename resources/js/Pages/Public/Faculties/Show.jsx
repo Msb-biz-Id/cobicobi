@@ -55,7 +55,7 @@ export default function FacultyPublicShow({ faculty }) {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
                 </div>
 
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative -mt-24 sm:-mt-32 pb-10">
+                <div className="site-container relative -mt-24 sm:-mt-32 pb-10">
                     <div className="flex flex-col sm:flex-row items-start sm:items-end gap-6">
                         <div className="h-28 w-28 sm:h-36 sm:w-36 rounded-3xl overflow-hidden bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-800 shadow-xl flex items-center justify-center shrink-0">
                             {faculty.logo_url ? (
@@ -92,7 +92,7 @@ export default function FacultyPublicShow({ faculty }) {
             </div>
 
             {/* Main Content Layout */}
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+            <div className="site-container py-10 space-y-12">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     {/* Left Column (2 Cols): Profil, Visi Misi, Prodi */}
                     <div className="lg:col-span-2 space-y-8">

@@ -49,7 +49,7 @@ export default function Show({ staff, relatedStaff = [] }) {
         <PublicLayout>
             <Head title={`${staff.full_name_with_titles} - Profil Civitas Akademika`} />
 
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+            <div className="site-container py-8 sm:py-12 space-y-8">
                 {/* Breadcrumbs */}
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <Link href={route('home')} className="hover:text-indigo-600 transition-colors">
@@ -566,7 +566,7 @@ export default function Show({ staff, relatedStaff = [] }) {
                     </div>
 
                     {/* Right: 1 Column - Contact, Office Info, & Related Faculty */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 lg:sticky lg:top-24 self-start">
                         {/* Informasi Komunikasi & Kantor */}
                         <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900/60 space-y-4">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-3 dark:border-slate-800">

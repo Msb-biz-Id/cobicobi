@@ -36,11 +36,18 @@ class PostSeeder extends Seeder
             'Teknik Internal Linking yang Efektif',
         ];
 
+        $campusImages = [
+            '/images/building.png',
+            '/images/students-activity.png',
+            '/images/campus-hero.png',
+            '/images/library.png',
+            '/images/lab.png',
+            '/images/auditorium.png',
+        ];
+
         foreach ($baseTitles as $index => $title) {
             $slug = Str::slug($title);
-            $thumbnailPath = "post-thumbnails/{$slug}.svg";
-
-            Storage::disk('public')->put($thumbnailPath, $this->makeSvg($title, $index));
+            $thumbnailPath = $campusImages[$index % count($campusImages)];
 
             $status = match ($index % 4) {
                 0 => 'draft',
@@ -83,8 +90,7 @@ class PostSeeder extends Seeder
             $thumbnailPath = null;
 
             if ($withThumbnail) {
-                $thumbnailPath = "post-thumbnails/{$slug}.svg";
-                Storage::disk('public')->put($thumbnailPath, $this->makeSvg($title, $i + 30));
+                $thumbnailPath = $campusImages[$i % count($campusImages)];
             }
 
             $status = fake()->randomElement([
@@ -157,21 +163,25 @@ class PostSeeder extends Seeder
 
     private function makeContent(string $title): string
     {
-        $intro = fake()->paragraph(3);
-        $bodyA = fake()->paragraph(6);
-        $bodyB = fake()->paragraph(5);
-
         return <<<HTML
-<h2>{$title}</h2>
-<p>{$intro}</p>
-<p>{$bodyA}</p>
-<blockquote>Gunakan data dan eksperimen untuk meningkatkan performa konten.</blockquote>
+<h2>Latar Belakang & Urgensi Program</h2>
+<p>Dalam menyongsong transformasi pendidikan tinggi di era kecerdasan artifisial dan revolusi industri modern, perguruan tinggi terus memperkuat komitmen tridharma perguruan tinggi. Penyelenggaraan kegiatan akademik dan pengembangan riset strategis diarahkan untuk menjawab tantangan riil di masyarakat serta kebutuhan dunia usaha dan industri global.</p>
+<p>Langkah ini diwujudkan melalui kurikulum berbasis kompetensi yang adaptif, penguatan ekosistem laboratorium, serta kolaborasi multidisiplin antara dosen, mahasiswa, dan mitra industri terkemuka baik di tingkat nasional maupun internasional.</p>
+
+<h2>Strategi Pelaksanaan & Poin Kunci</h2>
+<p>Guna mencapai standar mutu unggul, serangkaian inisiatif terintegrasi telah dirumuskan dan diimplementasikan secara berkesinambungan:</p>
 <ul>
-  <li>Riset kata kunci secara berkala.</li>
-  <li>Optimasi struktur heading dan internal link.</li>
-  <li>Gunakan gambar yang terkompresi.</li>
+  <li>Penyelarasan kurikulum perkuliahan dengan standar sertifikasi kompetensi industri modern.</li>
+  <li>Pemberian hibah penelitian terapan dan pendanaan prototipe inovasi sivitas akademika.</li>
+  <li>Peningkatan keterlibatan praktisi industri melalui program dosen tamu dan kuliah pakar berkala.</li>
+  <li>Penyediaan program beasiswa prestasi serta kemitraan riset bersama instansi pemerintah dan swasta.</li>
 </ul>
-<p>{$bodyB}</p>
+
+<blockquote>"Pendidikan bermutu bukan sekadar transfer pengetahuan teknis semata, melainkan proses penempaan integritas moral, nalar kritis, dan empati sosial untuk membangun peradaban bangsa yang tangguh dan berdaulat."</blockquote>
+
+<h2>Dampak Positif bagi Mahasiswa & Sivitas Akademika</h2>
+<p>Melalui implementasi agenda ini, mahasiswa memperoleh pengalaman belajar kontekstual melalui pendekatan project-based learning dan magang kerja bersertifikat. Dengan demikian, setiap lulusan dipersiapkan memiliki portofolio karya nyata yang berdaya saing tinggi.</p>
+<p>Pimpinan universitas menyampaikan apresiasi setinggi-tingginya kepada seluruh dosen, tenaga kependidikan, mahasiswa, dan mitra kerja sama yang senantiasa bergotong-royong memajukan reputasi almamater di kancah nasional maupun internasional.</p>
 HTML;
     }
 

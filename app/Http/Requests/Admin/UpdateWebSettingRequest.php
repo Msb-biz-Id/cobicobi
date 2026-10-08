@@ -51,6 +51,11 @@ class UpdateWebSettingRequest extends FormRequest
             'x_url' => ['nullable', 'url', 'max:255'],
             'linkedin_url' => ['nullable', 'url', 'max:255'],
             'threads_url' => ['nullable', 'url', 'max:255'],
+
+            // Theme Management: Typography, Colors, Layout
+            'theme_typography' => ['nullable', 'array'],
+            'theme_colors' => ['nullable', 'array'],
+            'theme_layout' => ['nullable', 'array'],
         ];
     }
 }

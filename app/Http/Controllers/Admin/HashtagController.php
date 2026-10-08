@@ -67,9 +67,21 @@ class HashtagController extends Controller
         ]);
     }
 
-    public function store(StoreHashtagRequest $request): RedirectResponse
+    public function store(StoreHashtagRequest $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
-        Hashtag::create($request->validated());
+        $hashtag = Hashtag::create($request->validated());
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'id' => $hashtag->id,
+                'hashtag' => [
+                    'id' => $hashtag->id,
+                    'name' => $hashtag->name,
+                    'slug' => $hashtag->slug,
+                ],
+            ]);
+        }
 
         return back()->with('success', 'Hastag berhasil ditambahkan.');
     }

@@ -22,16 +22,27 @@ import {
 import Button from '@/Components/UI/Button';
 import TipTapEditor from '@/Components/Editor/TipTapEditor';
 import MediaPickerModal from '@/Components/Media/MediaPickerModal';
+import WordPressTagSelector from '@/Components/Editor/WordPressTagSelector';
+import QuickCreateCategoryModal from '@/Components/Editor/QuickCreateCategoryModal';
+import ContentPreviewModal from '@/Components/Editor/ContentPreviewModal';
 
-export default function Edit({ event, categories = [] }) {
+export default function Edit({ event, categories = [], hashtags = [] }) {
     const isEdit = Boolean(event?.id);
+    const [categoriesList, setCategoriesList] = useState(categories);
+    const [createCategoryModalOpen, setCreateCategoryModalOpen] = useState(false);
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [scheduleMode, setScheduleMode] = useState(Boolean(event?.published_at));
 
     const { data, setData, post, put, processing, errors } = useForm({
         title: event?.title || '',
         slug: event?.slug || '',
-        category: event?.category || categories[0] || 'Seminar',
+        category_id: event?.category_id || (categories[0]?.id || ''),
+        category: event?.category || (categories[0]?.name || 'Seminar'),
+        hashtag_ids: event?.hashtag_ids || [],
+        new_hashtags: [],
         organizer: event?.organizer || '',
         status: event?.status || 'published',
+        published_at: event?.published_at ? event.published_at.substring(0, 16) : '',
         cover_image_path: event?.cover_image_path || '',
         summary: event?.summary || '',
         description: event?.description || '',
@@ -55,6 +66,28 @@ export default function Edit({ event, categories = [] }) {
 
     const [isCoverPickerOpen, setIsCoverPickerOpen] = useState(false);
     const [sponsorLogoPickerIndex, setSponsorLogoPickerIndex] = useState(null);
+
+    const handleCategoryCreated = (newCat) => {
+        setCategoriesList((prev) => [...prev, newCat]);
+        setData((prev) => ({
+            ...prev,
+            category_id: newCat.id,
+            category: newCat.name,
+        }));
+    };
+
+    const handlePublishDateChange = (val) => {
+        setData((prev) => {
+            const next = { ...prev, published_at: val };
+            if (val) {
+                const targetDate = new Date(val);
+                if (targetDate > new Date()) {
+                    next.status = 'scheduled';
+                }
+            }
+            return next;
+        });
+    };
 
     // Auto-generate slug from title
     const handleTitleChange = (val) => {
@@ -140,19 +173,35 @@ export default function Edit({ event, categories = [] }) {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setPreviewModalOpen(true)}
+                            className="gap-1.5"
+                        >
+                            <Eye className="h-3.5 w-3.5" />
+                            Pratinjau
+                        </Button>
                         {isEdit && (
                             <Link
-                                href={route('events.show', event.id)}
+                                href={route('public.events.show', event.slug || event.id)}
                                 target="_blank"
                                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
                             >
-                                <Eye className="h-3.5 w-3.5" />
-                                Preview Detail
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                Buka di Tab Baru
                             </Link>
                         )}
                         <Button type="submit" size="sm" variant="primary" disabled={processing} className="gap-1.5">
                             <Save className="h-4 w-4" />
-                            {processing ? 'Menyimpan...' : isEdit ? 'Perbarui Event' : 'Terbitkan Event'}
+                            {processing
+                                ? 'Menyimpan...'
+                                : data.status === 'scheduled' || (data.published_at && new Date(data.published_at) > new Date())
+                                ? 'Jadwalkan Event'
+                                : isEdit
+                                ? 'Perbarui Event'
+                                : 'Terbitkan Event'}
                         </Button>
                     </div>
                 </div>
@@ -458,7 +507,7 @@ export default function Edit({ event, categories = [] }) {
                         {/* Status & Kategori */}
                         <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900/60 space-y-4">
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                                Pengaturan Event
+                                Pengaturan Publikasi
                             </h3>
 
                             <div>
@@ -471,26 +520,107 @@ export default function Edit({ event, categories = [] }) {
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                                 >
                                     <option value="published">Published (Tayang Publik)</option>
+                                    <option value="scheduled">Scheduled (Terjadwal)</option>
                                     <option value="draft">Draft (Arsip)</option>
                                     <option value="cancelled">Cancelled (Dibatalkan)</option>
+                                    <option value="archived">Archived (Diarsipkan)</option>
                                 </select>
                             </div>
 
+                            {/* Content Scheduling Box */}
+                            <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 dark:border-slate-800 dark:bg-slate-900/40 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <Clock className="h-3.5 w-3.5 text-indigo-500" />
+                                        Jadwal Tayang Publik
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (scheduleMode) {
+                                                setScheduleMode(false);
+                                                setData('published_at', '');
+                                                if (data.status === 'scheduled') setData('status', 'draft');
+                                            } else {
+                                                setScheduleMode(true);
+                                                const tomorrow = new Date(Date.now() + 86400000).toISOString().substring(0, 16);
+                                                handlePublishDateChange(tomorrow);
+                                            }
+                                        }}
+                                        className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                                    >
+                                        {scheduleMode ? 'Ubah ke Segera' : 'Atur Jadwal'}
+                                    </button>
+                                </div>
+
+                                {scheduleMode ? (
+                                    <div className="space-y-1.5 pt-1">
+                                        <input
+                                            type="datetime-local"
+                                            value={data.published_at ? data.published_at.substring(0, 16) : ''}
+                                            onChange={(e) => handlePublishDateChange(e.target.value)}
+                                            className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+                                        />
+                                        <p className="text-[10px] text-slate-400">
+                                            Event akan tayang publik secara otomatis pada waktu ini.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        {data.status === 'published' ? 'Sudah diterbitkan' : 'Akan tayang langsung saat disimpan sebagai Published.'}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Kategori Agenda (Dari master Kategori Post) */}
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                                    Kategori Agenda
-                                </label>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        Kategori Agenda
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCreateCategoryModalOpen(true)}
+                                        className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                                    >
+                                        <Plus className="h-3 w-3" />
+                                        Kategori Baru
+                                    </button>
+                                </div>
                                 <select
-                                    value={data.category}
-                                    onChange={(e) => setData('category', e.target.value)}
+                                    value={data.category_id || ''}
+                                    onChange={(e) => {
+                                        const catId = e.target.value;
+                                        const found = categoriesList.find((c) => String(c.id) === String(catId));
+                                        setData((prev) => ({
+                                            ...prev,
+                                            category_id: catId,
+                                            category: found ? found.name : prev.category,
+                                        }));
+                                    }}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-900 focus:border-indigo-600 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                                 >
-                                    {categories.map((c) => (
-                                        <option key={c} value={c}>
-                                            {c}
+                                    <option value="">Pilih Kategori...</option>
+                                    {categoriesList.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.name}
                                         </option>
                                     ))}
                                 </select>
+                            </div>
+
+                            {/* Tags & Hashtags (Dari master Tags Post) */}
+                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                                <WordPressTagSelector
+                                    allTags={hashtags}
+                                    selectedTagIds={data.hashtag_ids || []}
+                                    selectedNewTags={data.new_hashtags || []}
+                                    onChange={({ hashtag_ids, new_hashtags }) => {
+                                        setData('hashtag_ids', hashtag_ids);
+                                        setData('new_hashtags', new_hashtags);
+                                    }}
+                                    label="Topik & Tag Event"
+                                />
                             </div>
                         </div>
 
@@ -738,6 +868,32 @@ export default function Edit({ event, categories = [] }) {
                     }
                 }}
                 title="Pilih Logo Sponsor dari Media Library"
+            />
+
+            {/* Quick Category Modal */}
+            <QuickCreateCategoryModal
+                isOpen={createCategoryModalOpen}
+                onClose={() => setCreateCategoryModalOpen(false)}
+                onCreated={handleCategoryCreated}
+            />
+
+            {/* Universal Content Preview Modal */}
+            <ContentPreviewModal
+                isOpen={previewModalOpen}
+                onClose={() => setPreviewModalOpen(false)}
+                title="Pratinjau Event"
+                type="event"
+                data={data}
+                categoryName={
+                    categoriesList.find((c) => String(c.id) === String(data.category_id))?.name ||
+                    data.category ||
+                    'Seminar'
+                }
+                tagNames={[
+                    ...hashtags.filter((h) => (data.hashtag_ids || []).includes(h.id)).map((h) => h.name),
+                    ...(data.new_hashtags || []),
+                ]}
+                publicUrl={isEdit && data.slug ? route('public.events.show', data.slug) : null}
             />
         </AuthenticatedLayout>
     );

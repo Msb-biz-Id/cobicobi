@@ -21,7 +21,7 @@ export default function StudyProgramsPublicIndex({ studyPrograms = [], faculties
 
             {/* Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-b from-blue-50/50 via-white to-white py-16 sm:py-24 dark:from-slate-900/60 dark:via-slate-950 dark:to-slate-950">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center relative z-10">
+                <div className="site-container text-center relative z-10">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800">
                         <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Kurikulum Mutakhir & Prospek Karir Global
                     </span>
@@ -39,11 +39,10 @@ export default function StudyProgramsPublicIndex({ studyPrograms = [], faculties
                                 setSelectedDegree('');
                                 handleFilterChange(selectedFaculty, '');
                             }}
-                            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
-                                selectedDegree === ''
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${selectedDegree === ''
                                     ? 'bg-blue-600 text-white shadow-xs'
                                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'
-                            }`}
+                                }`}
                         >
                             Semua Jenjang
                         </button>
@@ -54,11 +53,10 @@ export default function StudyProgramsPublicIndex({ studyPrograms = [], faculties
                                     setSelectedDegree(deg);
                                     handleFilterChange(selectedFaculty, deg);
                                 }}
-                                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${
-                                    selectedDegree === deg
+                                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition ${selectedDegree === deg
                                         ? 'bg-blue-600 text-white shadow-xs'
                                         : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'
-                                }`}
+                                    }`}
                             >
                                 Jenjang {deg}
                             </button>
@@ -68,7 +66,7 @@ export default function StudyProgramsPublicIndex({ studyPrograms = [], faculties
             </section>
 
             {/* List Program Studi */}
-            <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-20">
+            <section className="site-container pb-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {studyPrograms.length === 0 ? (
                         <div className="col-span-full py-16 text-center text-slate-500 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">

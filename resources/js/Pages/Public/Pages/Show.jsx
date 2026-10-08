@@ -7,7 +7,8 @@ export default function Show({ page }) {
         <PublicLayout>
             <Head title={`${page.title} - Laman Universitas`} />
 
-            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-10 sm:py-16 space-y-8">
+            <div className="site-container py-10 sm:py-16">
+                <div className="max-w-4xl mx-auto space-y-8">
                 {/* Breadcrumbs */}
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <Link href={route('home')} className="hover:text-indigo-600 transition-colors">
@@ -41,6 +42,7 @@ export default function Show({ page }) {
                     className="prose prose-slate max-w-none text-base sm:text-lg leading-relaxed dark:prose-invert prose-headings:font-bold prose-headings:tracking-tight prose-a:text-indigo-600 prose-img:rounded-3xl"
                     dangerouslySetInnerHTML={{ __html: page.content }}
                 />
+                </div>
             </div>
         </PublicLayout>
     );

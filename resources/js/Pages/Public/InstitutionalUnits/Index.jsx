@@ -26,7 +26,7 @@ export default function InstitutionalUnitsPublicIndex({ units = [], filters = {}
 
             {/* Hero Section */}
             <section className="relative overflow-hidden bg-gradient-to-b from-purple-50/50 via-white to-white py-16 sm:py-24 dark:from-slate-900/60 dark:via-slate-950 dark:to-slate-950">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center relative z-10">
+                <div className="site-container text-center relative z-10">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800">
                         <Sparkles className="w-3.5 h-3.5 text-purple-600" /> Layanan & Fasilitas Terpadu
                     </span>
@@ -63,7 +63,7 @@ export default function InstitutionalUnitsPublicIndex({ units = [], filters = {}
             </section>
 
             {/* List Cards */}
-            <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-20">
+            <section className="site-container pb-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {units.length === 0 ? (
                         <div className="col-span-full py-16 text-center text-slate-500 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">

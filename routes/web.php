@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\WebSettingController;
+use App\Http\Controllers\Admin\CampusSettingController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\RolePermissionController;
 use App\Http\Controllers\Admin\MenuController;
@@ -8,7 +9,6 @@ use App\Http\Controllers\Admin\HashtagController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ContactMessageController;
 use App\Http\Controllers\Admin\MediaController;
-use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PostController;
 use App\Http\Controllers\Admin\UserController;
@@ -40,6 +40,9 @@ use Inertia\Inertia;
 
 // Portal Publik, Arsip & Detail dalam Bahasa Indonesia (Bebas ID di URL)
 Route::get('/', [PublicController::class, 'home'])->name('home');
+Route::get('/tentang', [PublicController::class, 'about'])->name('public.about');
+Route::get('/struktur-organisasi', [PublicController::class, 'organizationalStructure'])->name('public.organizational-structure');
+Route::get('/kontak', [PublicController::class, 'contact'])->name('public.contact');
 
 // Fakultas & Program Studi (Lengkap dengan Prospek Karir & Slide Dosen)
 Route::get('/fakultas', [FacultyPublicController::class, 'index'])->name('public.faculties.index');
@@ -87,6 +90,9 @@ Route::get('/topik/{hashtag:slug}', [PublicController::class, 'tagArchive'])->na
 Route::get('/laman/{page:slug}', [PublicController::class, 'pageDetail'])->name('public.pages.show');
 
 // Kirim Pesan Kontak
+Route::post('/kontak', [ContactFormController::class, 'store'])
+    ->middleware(['throttle:contact-submission'])
+    ->name('public.contact.store');
 Route::post('/kontak/kirim', [ContactFormController::class, 'store'])
     ->middleware(['throttle:contact-submission'])
     ->name('contact.submit');
@@ -166,11 +172,6 @@ Route::get('/media', [MediaController::class, 'index'])->name('media.index');
     Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
 
     Route::resource('galleries', GalleryController::class);
-
-    Route::get('/notifications', [NotificationController::class, 'index'])->middleware('permission:notifications.view')->name('notifications.index');
-    Route::post('/notifications', [NotificationController::class, 'store'])->middleware('permission:notifications.create')->name('notifications.store');
-    Route::put('/notifications/{notification}', [NotificationController::class, 'update'])->middleware('permission:notifications.update')->name('notifications.update');
-    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->middleware('permission:notifications.delete')->name('notifications.destroy');
 
     Route::get('/contact-messages', [ContactMessageController::class, 'index'])->middleware('permission:contact-messages.view')->name('contact-messages.index');
     Route::get('/contact-messages/{contactMessage}', [ContactMessageController::class, 'show'])->middleware('permission:contact-messages.view')->name('contact-messages.show');
@@ -280,6 +281,10 @@ Route::get('/media', [MediaController::class, 'index'])->name('media.index');
 
     Route::get('/settings/web', [WebSettingController::class, 'edit'])->middleware('permission:settings.web.view')->name('web-settings.edit');
     Route::post('/settings/web', [WebSettingController::class, 'update'])->middleware('permission:settings.web.update')->name('web-settings.update');
+
+    // Panel Konfigurasi Kampus (Hero Slider, Sambutan Rektor, Profil Lengkap, Home Page Builder)
+    Route::get('/campus-settings', [CampusSettingController::class, 'edit'])->middleware('permission:settings.web.view')->name('admin.campus-settings.edit');
+    Route::post('/campus-settings', [CampusSettingController::class, 'update'])->middleware('permission:settings.web.update')->name('admin.campus-settings.update');
 
     Route::get('/audit-logs', [AuditLogController::class, 'index'])
         ->middleware('permission:audit-logs.view')

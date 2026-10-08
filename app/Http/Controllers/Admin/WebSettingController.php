@@ -91,6 +91,9 @@ class WebSettingController extends Controller
             'x_url' => $setting->x_url,
             'linkedin_url' => $setting->linkedin_url,
             'threads_url' => $setting->threads_url,
+            'theme_typography' => $setting->getResolvedTypography(),
+            'theme_colors' => $setting->getResolvedColors(),
+            'theme_layout' => $setting->getResolvedLayout(),
         ];
     }
 }
